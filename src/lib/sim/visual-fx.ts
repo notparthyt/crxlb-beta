@@ -12,7 +12,10 @@
 import { steerNormOf } from './car-pose';
 import * as THREE from 'three';
 import { createF1Car2026, type PortedSkin, type SimCarRig } from '@/lib/car-builder-2026';
+import { createRB22CarRig } from '@/lib/rb22-car-rig';
+import { RB22_URL, loadRB22Template } from '@/f1/rb22.mjs';
 import { anyCarForVehicle, carForVehicle, portedSkinFor } from '@/lib/cars/car-registry';
+import { vehicleModelSpec } from '@/lib/cars/vehicle-models';
 import type { WheelSeating } from '@/lib/render/corner-rig';
 import { createPortedCarRig, loadTemplate as loadPortedTemplate } from '@/lib/ported-car-model';
 import { defaultGtTyreBrand, type GtTyreBrand } from '@/lib/render/gt-tyre-sidewall';
@@ -30,6 +33,7 @@ import { VW_SCIROCCO_CONFIG } from './road/VwSciroccoConfig';
 import { AMG_GT3_CONFIG } from './gt3/AmgGt3Config';
 import { LC26_MODEL_URL, loadLc26Template } from '@/lib/lc26-car-model';
 import { assetProgress } from '@/lib/loading/asset-progress';
+import { withBasePath } from '@/lib/base-path';
 import { addContactShadow, seatContactShadow } from '@/lib/render/contact-shadow';
 import { addCarShadowProxy } from '@/lib/render/car-shadow-proxy';
 import { CarHeadlights, type HeadlightBeam } from '@/lib/render/car-headlights';
@@ -186,6 +190,13 @@ export class SimVisualFxManager {
     this.graphicsQuality = quality;
   }
 
+  public setRb22ForAi(enabled: boolean): void {
+    if (this.rb22ForAi === enabled) return;
+    this.rb22ForAi = enabled;
+    for (const entry of this.opponentCars.values()) this.dropOpponentRigs(entry);
+    this.opponentCars.clear();
+  }
+
   /**
    * The lit headlight beams of the solid opponents (after `setHeadlights` this frame), into `out` from slot 0 (it
    * grows as needed); returns how many. For opponent-beams.ts, which lights the road with them
@@ -231,7 +242,7 @@ export class SimVisualFxManager {
    */
   private prewarms = new Map<string, Promise<boolean>>();
 
-  constructor() {
+  constructor(private rb22ForAi = false) {
     // 1. Initialize Persistent Tire Skidmark Ribbon Mesh
     const vertCount = MAX_SKID_SEGMENTS * 4;
     this.skidPositions = new Float32Array(vertCount * 3);
@@ -719,10 +730,11 @@ export class SimVisualFxManager {
   private createOpponentRig(peer: InterpolatedPeerState): SimCarRig {
     const livery = this.mapDriverToLivery(liveryCodeOf(peer));
     const ghost = Boolean(peer.ghost || peer.passThrough || peer.stale);
-    const pooled = this.pool.get(poolKey(peer.vehicle, ghost))?.pop();
-    const rig = pooled ?? buildOpponentRig(peer.vehicle, livery);
+    const rb22 = this.rb22ForAi && peer.isAiPeer && rigKind(peer.vehicle) === 'f1';
+    const pooled = this.pool.get(poolKey(peer.vehicle, ghost, rb22))?.pop();
+    const rig = pooled ?? buildOpponentRig(peer.vehicle, livery, rb22);
     if (!ghost && !this.rigHeadlights.has(rig)) {
-      const carId = peer.vehicle ? carForVehicle(peer.vehicle).id : 'lc26';
+      const carId = rb22 ? 'hyper-rb22' : peer.vehicle ? carForVehicle(peer.vehicle).id : 'lc26';
       const hl = new CarHeadlights(carId, { lightsOnly: true });
       hl.attach(rig.chassisGroup);
       this.rigHeadlights.set(rig, hl);
@@ -743,10 +755,12 @@ export class SimVisualFxManager {
    */
   public prewarm(vehicle: VehicleModelId | undefined): Promise<void> {
     const kind = rigKind(vehicle);
-    let job = this.prewarms.get(kind);
+    const rb22 = kind === 'f1' && this.rb22ForAi;
+    const key = prewarmKey(kind, rb22);
+    let job = this.prewarms.get(key);
     if (!job) {
-      job = this.buildPrewarm(vehicle, kind);
-      this.prewarms.set(kind, job);
+      job = this.buildPrewarm(vehicle, kind, rb22);
+      this.prewarms.set(key, job);
     }
     // Each call reports to the loading screen once the rigs are there, not before
     return job.then((built) => {
@@ -755,9 +769,13 @@ export class SimVisualFxManager {
     });
   }
 
-  private buildPrewarm(vehicle: VehicleModelId | undefined, kind: string): Promise<boolean> {
+  private buildPrewarm(vehicle: VehicleModelId | undefined, kind: string, rb22: boolean): Promise<boolean> {
     const template: Promise<unknown> =
-      kind !== 'f1' ? loadPortedTemplate(PORTED_ONLY[kind as PortedKind].url) : loadLc26Template(LC26_MODEL_URL, 'opponents');
+      kind !== 'f1'
+        ? loadPortedTemplate(PORTED_ONLY[kind as PortedKind].url)
+        : rb22
+          ? loadRB22Template(withBasePath(RB22_URL))
+          : loadLc26Template(LC26_MODEL_URL, 'opponents');
     return template
       .then(() => {
         // The rigs attach the cached template in their own `then`, registered before this one returns. One racing
@@ -767,29 +785,29 @@ export class SimVisualFxManager {
           { ghost: true, livery: LIVERIES[0] },
         ];
         for (const { ghost, livery } of builds) {
-          const rig = buildOpponentRig(vehicle, livery);
+          const rig = buildOpponentRig(vehicle, livery, rb22);
           if (!ghost) {
-            const carId = vehicle ? carForVehicle(vehicle).id : 'lc26';
+            const carId = rb22 ? 'hyper-rb22' : vehicle ? carForVehicle(vehicle).id : 'lc26';
             const hl = new CarHeadlights(carId, { lightsOnly: true });
             hl.attach(rig.chassisGroup);
             this.rigHeadlights.set(rig, hl);
           }
           rig.root.position.set(0, -500, 0);
           this.group.add(rig.root);
-          const key = poolKey(vehicle, ghost);
-          this.pool.set(key, [...(this.pool.get(key) ?? []), rig]);
+          const rigPoolKey = poolKey(vehicle, ghost, rb22);
+          this.pool.set(rigPoolKey, [...(this.pool.get(rigPoolKey) ?? []), rig]);
         }
         // A task later the rigs have attached the cached models (each in its own promise callback)
         return new Promise<void>((resolve) => setTimeout(resolve, 0));
       })
       .then(() => {
-        for (const rig of this.pool.get(poolKey(vehicle, true)) ?? []) ghostify(rig.root);
+        for (const rig of this.pool.get(poolKey(vehicle, true, rb22)) ?? []) ghostify(rig.root);
         return true;
       })
       .catch((err) => {
         console.warn('Opponent cars not pre-warmed', err);
         // Not built: the next prewarm() of this kind tries again
-        this.prewarms.delete(kind);
+        this.prewarms.delete(prewarmKey(kind, rb22));
         return false;
       });
   }
@@ -1123,7 +1141,9 @@ const rigKind = (vehicle: VehicleModelId | undefined): PortedKind | 'f1' =>
             vehicle === 'porsche-934-rsr'
           ? vehicle
           : 'f1';
-const poolKey = (vehicle: VehicleModelId | undefined, ghost: boolean) => `${rigKind(vehicle)}${ghost ? ':ghost' : ''}`;
+const prewarmKey = (kind: string, rb22: boolean) => `${kind}${kind === 'f1' && rb22 ? ':rb22' : ''}`;
+const poolKey = (vehicle: VehicleModelId | undefined, ghost: boolean, rb22 = false) =>
+  `${prewarmKey(rigKind(vehicle), rb22)}${ghost ? ':ghost' : ''}`;
 
 export function opponentGtTyreBrand(vehicle: VehicleModelId | undefined): GtTyreBrand | null {
   if (!vehicle) return null;
@@ -1131,10 +1151,13 @@ export function opponentGtTyreBrand(vehicle: VehicleModelId | undefined): GtTyre
   return def ? defaultGtTyreBrand(def.id, def.classId) : defaultGtTyreBrand(vehicle);
 }
 
-function buildOpponentRig(vehicle: VehicleModelId | undefined, livery: LiveryConfig): SimCarRig {
+function buildOpponentRig(vehicle: VehicleModelId | undefined, livery: LiveryConfig, rb22 = false): SimCarRig {
   let rig: SimCarRig;
   const kind = rigKind(vehicle);
-  if (kind !== 'f1') {
+  if (kind === 'f1' && rb22) {
+    const model = vehicleModelSpec(vehicle ?? 'lc26');
+    rig = createRB22CarRig(model.rigConfig.chassis, livery, 'opponents');
+  } else if (kind !== 'f1') {
     const own = PORTED_ONLY[kind];
     rig = createPortedCarRig({
       url: own.url,

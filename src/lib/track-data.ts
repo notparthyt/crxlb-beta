@@ -100,6 +100,8 @@ export interface BuiltTrackData {
   meshUrl?: string;
   /** Materials of the circuit GLB's scan that are the racing surface (asphalt shader); none for a circuit with its own road meshes */
   roadMaterials?: string[];
+  /** Track-specific maximum distance to fit rendered asphalt onto its physics surface (m); defaults to 0.32 */
+  visualRoadFitWindowM?: number;
   /** World-space boxes of the scan's geometry to leave out (scenery-cuts.ts) */
   sceneryCuts?: SceneryCutBox[];
   /** Scan materials whose meshes are left out (scenery-cuts.ts) */
@@ -1116,6 +1118,7 @@ function rawSampleAtS(s: number): RawTrackSample {
 export interface TrackMetaExtras {
   shortName?: string;
   baseAltitudeM?: number;
+  startLineOffsetM?: number;
   /**
    * `roadMaterials`: the scan's racing-surface materials (build_track.py), drawn with the asphalt shader;
    * `cutBoxes` / `cutMaterials`: scan geometry standing on the racing line, left out at load (scenery-cuts.ts);
@@ -1129,6 +1132,7 @@ export interface TrackMetaExtras {
   mesh?: {
     url?: string;
     roadMaterials?: string[];
+    visualRoadFitWindowM?: number;
     cutBoxes?: SceneryCutBox[];
     cutMaterials?: string[];
     conformSurfaces?: boolean;
@@ -2225,6 +2229,7 @@ export function getActiveTrackData(numSamples = 1200): BuiltTrackData {
     pointToPoint: getActiveTrackMetadata().pointToPoint,
     meshUrl,
     roadMaterials: meshMeta?.roadMaterials,
+    visualRoadFitWindowM: meshMeta?.visualRoadFitWindowM,
     sceneryCuts: meshMeta?.cutBoxes,
     sceneryCutMaterials: meshMeta?.cutMaterials,
     sceneryUrls: meshMeta?.scenery,

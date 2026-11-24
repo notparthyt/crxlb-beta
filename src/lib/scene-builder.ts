@@ -28,7 +28,7 @@ import { loadVenueLayout } from "@/lib/render/venue-model";
 import { venueModelFiles, type VenueModelFiles, type VenuePair } from "@/lib/venue-models";
 
 /** Height of a racing-line dash over the driving surface: clear of its ripple, low enough to read as paint */
-const DASH_SEAT_LIFT_M = 0.035;
+const DASH_SEAT_LIFT_M = 0.012;
 
 /** The built scene of the active circuit */
 export interface BuiltCircuitScene {
@@ -266,7 +266,9 @@ function loadTrackGlb(
   /** Mesh/node names excluded from casting shadows (track data `noShadowMeshes`) */
   noShadowMeshes: readonly string[] = [],
   /** Material names excluded from casting shadows (track data `noShadowMaterials`) */
-  noShadowMaterials: readonly string[] = []
+  noShadowMaterials: readonly string[] = [],
+  /** Maximum visual-road correction for tracks whose rendered asphalt differs from the physics surface */
+  visualRoadFitWindowM?: number
 ): void {
   const cutMaterialNames = new Set(cutMaterials);
   const roadMaterialNames = new Set(roadMaterials);
@@ -333,7 +335,7 @@ function loadTrackGlb(
       root.updateMatrixWorld(true);
       const colliders = trackColliders(root);
       if (colliders.conformSurfaces && colliders.ground) {
-        fitVisualRoad(root, colliders.ground, roadMaterials);
+        fitVisualRoad(root, colliders.ground, roadMaterials, { roadFitWindowM: visualRoadFitWindowM });
         // The mod's gaps between the asphalt and the terrain beside it, fitted with their heights kept, open onto the
         // sky's ground: filled with the terrain's own surface (seam-fill.ts)
         fillRoadSeams(root, roadMaterials, { lap });
@@ -931,12 +933,12 @@ export function buildCircuitScene(
     const p0Base = s0.position.clone().addScaledVector(s0.binormal, aiLineOffsetM(s0, line));
     const p1Base = s1.position.clone().addScaledVector(s1.binormal, aiLineOffsetM(s1, line));
 
-    const pDashEnd = p0Base.clone().lerp(p1Base, 0.72);
-    const nDashEnd = s0.normal.clone().lerp(s1.normal, 0.72).normalize();
-    const bDashEnd = s0.binormal.clone().lerp(s1.binormal, 0.72).normalize();
+    const pDashEnd = p0Base.clone().lerp(p1Base, 0.48);
+    const nDashEnd = s0.normal.clone().lerp(s1.normal, 0.48).normalize();
+    const bDashEnd = s0.binormal.clone().lerp(s1.binormal, 0.48).normalize();
 
-    const halfDashW = 0.44;
-    const dashLiftY = 0.048;
+    const halfDashW = 0.22;
+    const dashLiftY = 0.02;
 
     const c0 = p0Base.clone().addScaledVector(s0.normal, dashLiftY);
     const c1 = pDashEnd.clone().addScaledVector(nDashEnd, dashLiftY);
@@ -1089,6 +1091,7 @@ export function buildCircuitScene(
   const startRight = startSample.binormal.clone().normalize();
   const startLightGroup = new THREE.Group();
   startLightGroup.name = "StartLightPods";
+  startLightGroup.visible = false;
   sceneGroup.add(startLightGroup);
 
   /** Lamp states (emissive colour and intensity) shared by the LibreCorsa pods and a converted circuit's own lamps */
@@ -1110,11 +1113,17 @@ export function buildCircuitScene(
     startLightGroup.add(pod);
     startLightMeshes.push(pod);
   }
-  const placePods = (center: THREE.Vector3, halfDepth: number, spacing: number) => {
-    const face = center.clone().addScaledVector(startFwd, -(halfDepth + 0.05));
+  const placePods = (
+    center: THREE.Vector3,
+    halfDepth: number,
+    spacing: number,
+    forward = startFwd,
+    right = startRight
+  ) => {
+    const face = center.clone().addScaledVector(forward, -(halfDepth + 0.05));
     startLightMeshes.forEach((pod, i) => {
-      pod.position.copy(face).addScaledVector(startRight, (i - 2) * spacing);
-      pod.lookAt(pod.position.clone().sub(startFwd));
+      pod.position.copy(face).addScaledVector(right, (i - 2) * spacing);
+      pod.lookAt(pod.position.clone().sub(forward));
     });
   };
   placePods(
@@ -1187,11 +1196,19 @@ export function buildCircuitScene(
     });
     if (startLightState !== undefined) applySemaphoreMaterials(startLightState);
 
-    /** The pods across the front of a gantry model, on its first red row, at least `minSpacing` apart */
-    const placePodsOn = (gantry: THREE.Object3D, minSpacing: number, bounds?: { minF: number; maxF: number }) => {
-      // Extent of the model along the start direction and across it, from its own vertices: on a diagonal straight
-      // the axis-aligned box of a thin panel is far deeper than the panel, and the pods would hang in front of it.
-      // `bounds` lets a shared mesh (e.g. Istanbul Park's main gantry + mid-grid repeater) frame only the main gantry.
+    const frameAt = (object: THREE.Object3D) => {
+      const center = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3());
+      const projection = track.projectWorldToTrack(center.x, center.z);
+      const sample = track.getSampleAtDistance(projection.s);
+      return { forward: sample.tangent.clone().normalize(), right: sample.binormal.clone().normalize() };
+    };
+    /** The pods across the first red row of an authored start-light assembly */
+    const placePodsOn = (
+      gantry: THREE.Object3D,
+      minSpacing: number,
+      bounds?: { minF: number; maxF: number },
+      frame = frameAt(gantry)
+    ): boolean => {
       let minF = Infinity;
       let maxF = -Infinity;
       let minR = Infinity;
@@ -1208,9 +1225,9 @@ export function buildCircuitScene(
         if (!pos) return;
         for (let i = 0; i < pos.count; i++) {
           v.fromBufferAttribute(pos, i).applyMatrix4(obj.matrixWorld);
-          const f = v.dot(startFwd);
+          const f = v.dot(frame.forward);
           if (bounds && (f < bounds.minF || f > bounds.maxF)) continue;
-          const r = v.dot(startRight);
+          const r = v.dot(frame.right);
           minF = Math.min(minF, f);
           maxF = Math.max(maxF, f);
           minR = Math.min(minR, r);
@@ -1223,22 +1240,29 @@ export function buildCircuitScene(
           maxZ = Math.max(maxZ, v.z);
         }
       });
-      if (minF > maxF) return;
+      if (minF > maxF) return false;
       const center = new THREE.Vector3((minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5);
-      // Four lamps per column (amber, green, red, red): sit on the first red row, 1/8 of the height below centre
       center.y -= (maxY - minY) * 0.125;
-      placePods(center, (maxF - minF) * 0.5, Math.max(minSpacing, (maxR - minR) / 5));
+      placePods(center, (maxF - minF) * 0.5, Math.max(minSpacing, (maxR - minR) / 5), frame.forward, frame.right);
+      return true;
     };
     const gantry = root.getObjectByName("Prop_StartLights_0");
     const acGantry = root.getObjectByName("startlight_SUB1");
     const istLights = root.getObjectByName("core_start_lights_a_chunk0");
     const istGantry = root.getObjectByName("ist_start_gantry_a_chunk0");
-    if (gantry) placePodsOn(gantry, 0);
-    else if (acGantry) placePodsOn(acGantry, 0.28);
+    let mainRedRow: THREE.Object3D | null = null;
+    root.traverse((obj) => {
+      const name = inheritedTag<string>(obj, "name", root) ?? obj.name;
+      if (!mainRedRow && obj instanceof THREE.Mesh && /^lights_start_main.*_red(?:_|$)/i.test(name)) mainRedRow = obj;
+    });
+    if (gantry) startLightGroup.visible = placePodsOn(gantry, 0);
+    else if (acGantry) startLightGroup.visible = placePodsOn(acGantry, 0.28);
+    else if (mainRedRow) startLightGroup.visible = placePodsOn(mainRedRow, 0.28);
     else if (istLights && istGantry) {
       const gb = new THREE.Box3().setFromObject(istGantry);
-      const gf = gb.getCenter(new THREE.Vector3()).dot(startFwd);
-      placePodsOn(istLights, 0.28, { minF: gf - 15, maxF: gf + 15 });
+      const frame = frameAt(istGantry);
+      const gf = gb.getCenter(new THREE.Vector3()).dot(frame.forward);
+      startLightGroup.visible = placePodsOn(istLights, 0.28, { minF: gf - 15, maxF: gf + 15 }, frame);
     } else if (ownLamps) startLightGroup.visible = false;
   };
 
@@ -1300,7 +1324,8 @@ export function buildCircuitScene(
     // The road edges a driver sees: across the track and 15 m beyond its sides (the run-off's own asphalt, the pit exit)
     samples.map((p) => ({ x: p.position.x, z: p.position.z, reach: p.width / 2 + 15 })),
     track.noShadowMeshes ?? [],
-    track.noShadowMaterials ?? []
+    track.noShadowMaterials ?? [],
+    track.visualRoadFitWindowM
   );
 
   // The procedural stand-in is placed once

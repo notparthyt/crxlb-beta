@@ -88,8 +88,12 @@ export function fitVisualRoad(
   root: THREE.Object3D,
   ground: GroundQuery,
   roadMaterials?: readonly string[],
-  opts: { everyVertex?: boolean } = {}
+  opts: { everyVertex?: boolean; roadFitWindowM?: number } = {}
 ): void {
+  const roadFitWindowM = opts.roadFitWindowM ?? FIT_WINDOW_M;
+  if (!Number.isFinite(roadFitWindowM) || roadFitWindowM < FIT_WINDOW_M) {
+    throw new RangeError(`roadFitWindowM must be at least ${FIT_WINDOW_M} m`);
+  }
   const roadSet = new Set(roadMaterials ?? []);
   // Every `Track_Model` there is (a venue's split model puts its shared scenery under the layout's own)
   const models: THREE.Object3D[] = [];
@@ -105,7 +109,7 @@ export function fitVisualRoad(
   });
   const base = shaped && ground instanceof TrackColliderQuery ? ground : null;
   // Leaves out, before the ground query, the vertices the fit cannot move (most of a scan)
-  const reach = opts.everyVertex ? null : roadReach(ground);
+  const reach = opts.everyVertex ? null : roadReach(ground, roadFitWindowM);
   const inv = new THREE.Matrix4();
   const v = new THREE.Vector3();
   const seen = new Set<THREE.BufferGeometry>();
@@ -124,6 +128,7 @@ export function fitVisualRoad(
     const o = layer.mesh;
     const pos = o.geometry.getAttribute("position");
     const under = layer.overlay ? null : base;
+    const fitWindowM = layer.road ? roadFitWindowM : FIT_WINDOW_M;
     inv.copy(o.matrixWorld).invert();
     if (heights.length < pos.count) heights = new Float32Array(pos.count);
     heights.fill(NaN, 0, pos.count);
@@ -132,8 +137,8 @@ export function fitVisualRoad(
     for (let i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
       if (reach && !reach(v.x, v.y, v.z)) continue;
-      const found = under ? under.queryBase(v.x, v.z, v.y + FIT_WINDOW_M, hit) : ground.query(v.x, v.z, v.y + FIT_WINDOW_M, hit);
-      if (!found || hit.surface === "grass" || !(Math.abs(v.y - hit.height) < FIT_WINDOW_M)) continue;
+      const found = under ? under.queryBase(v.x, v.z, v.y + fitWindowM, hit) : ground.query(v.x, v.z, v.y + fitWindowM, hit);
+      if (!found || hit.surface === "grass" || !(Math.abs(v.y - hit.height) < fitWindowM)) continue;
       v.y = place(v.x, v.y, v.z, hit.height);
       heights[i] = v.y - hit.height;
       highest = Math.max(highest, heights[i]);
@@ -389,7 +394,7 @@ const REACH_SLACK_M = 0.01;
  *
  * Null for a ground without triangles to bound (flat or analytic): every vertex is then queried.
  */
-function roadReach(ground: GroundQuery): ((x: number, y: number, z: number) => boolean) | null {
+function roadReach(ground: GroundQuery, fitWindowM = FIT_WINDOW_M): ((x: number, y: number, z: number) => boolean) | null {
   if (!(ground instanceof TrackColliderQuery)) return null;
   const { tris, triLayer, layers } = ground.toBuffers();
   const triCount = triLayer.length;
@@ -444,7 +449,7 @@ function roadReach(ground: GroundQuery): ((x: number, y: number, z: number) => b
       }
     }
   }
-  const reachM = FIT_WINDOW_M + ripple + REACH_SLACK_M;
+  const reachM = fitWindowM + ripple + REACH_SLACK_M;
   return (x, y, z) => {
     const cx = Math.floor((x - minX) / REACH_CELL_M);
     const cz = Math.floor((z - minZ) / REACH_CELL_M);

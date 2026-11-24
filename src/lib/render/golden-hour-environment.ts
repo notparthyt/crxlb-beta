@@ -16,6 +16,7 @@ import {
 } from "postprocessing";
 import { patchShader } from "./shader-patch";
 import { PhysicalSky } from "./physical-sky";
+import { RainLensEffect, type RainLensState } from "./rain-lens-effect";
 import { nightShareOfElevation, nightSkyGlsl, starShare } from "./night-sky";
 import { isTouchDevice } from "@/lib/input/touch-input";
 import { pixelRatioCap, type RenderPlan } from "./adaptive-quality";
@@ -153,11 +154,17 @@ export interface FloodlitNightLook {
   keyIntensity: number;
   /** How high the light stands (deg): steep, as from masts on both sides */
   keyElevationDeg: number;
+  /** Optional cool ambient tint for shaded surfaces at the venue */
+  fillColor?: number;
   fillIntensity: number;
   environmentIntensity: number;
   exposure: number;
   /** Haze lit by the venue, for the fog */
   fogColor: number;
+  /** Optional multiplier for the night sky's stars */
+  nightStars?: number;
+  /** Optional night shadow opacity; 0.1 leaves shadows only 10% darker than lit surfaces */
+  shadowIntensity?: number;
 }
 
 /** The original look: clear sky, sun at 14 deg / 127 deg */
@@ -211,6 +218,7 @@ export interface GoldenHourEnvironment {
 export interface PostFx {
   composer: EffectComposer;
   render(dtSeconds: number): void;
+  setRainLens(state: RainLensState): void;
   setSize(width: number, height: number): void;
   /** swap the camera used by the render pass (the sim uses a single camera, but keep it safe) */
   setCamera(camera: THREE.Camera): void;
@@ -701,6 +709,9 @@ export function createGoldenHourEnvironment(
     // Under floodlights the night's key light stands steep over the circuit instead
     const flood = floodlit && nightShare > 0 ? floodlit : null;
     if (flood) sunDirection.lerp(sunDirectionUnit(flood.keyElevationDeg, (c.azimuthDeg + 180) % 360), nightShare).normalize();
+    sunLight.shadow.intensity = flood?.shadowIntensity === undefined
+      ? 1
+      : THREE.MathUtils.lerp(1, flood.shadowIntensity, nightShare);
     skySunDir.copy(sunDirectionUnit(e, c.azimuthDeg));
     sunLight.position.copy(sunDirection).multiplyScalar(SUN_DISTANCE_M);
     colorCurve(SUN_COLOR_KEYS, e, sunLight.color).lerp(tint.setHex(OVERCAST_SUN), 0.6 * cloud * (1 - nightShare));
@@ -727,6 +738,7 @@ export function createGoldenHourEnvironment(
       // Cloud does not dim a floodlight; rain and cloud keep their share of the haze
       sunLight.color.lerp(tint.setHex(flood.keyColor), nightShare);
       sunLight.intensity = THREE.MathUtils.lerp(sunLight.intensity, flood.keyIntensity, nightShare);
+      if (flood.fillColor !== undefined) fillLight.color.lerp(tint.setHex(flood.fillColor), nightShare);
       fillLight.intensity = THREE.MathUtils.lerp(fillLight.intensity, flood.fillIntensity, nightShare);
       fog.color.lerp(tint.setHex(flood.fogColor), nightShare);
       scene.environmentIntensity = THREE.MathUtils.lerp(scene.environmentIntensity, flood.environmentIntensity, nightShare);
@@ -734,6 +746,7 @@ export function createGoldenHourEnvironment(
     }
 
     skyLookFor(current, skyLook);
+    if (flood?.nightStars !== undefined) skyLook.nightStars *= flood.nightStars;
     applySkyLook(sky, skySunDir, skyLook);
     physicalSky?.setConditions({ sunDirection: skySunDir, cloud, rain, windVxMs: c.windVxMs, windVzMs: c.windVzMs });
     const dElev = Math.abs(e - baked.elevationDeg);
@@ -1016,12 +1029,17 @@ export function createPostFx(
   plainPass.enabled = false;
   // Terminal passes end the chain and one runs at a time, so each draws to the screen itself. Set before they are
   // added, this also stops the composer moving the screen output to whichever pass is last
-  bloomPass.renderToScreen = true;
-  plainPass.renderToScreen = true;
+  const rainLens = new RainLensEffect();
+  const rainPass = new EffectPass(camera, rainLens);
+  // The lens runs after tone mapping and the display grade; it is the one final pass to screen.
+  bloomPass.renderToScreen = false;
+  plainPass.renderToScreen = false;
+  rainPass.renderToScreen = true;
 
   composer.addPass(renderPass);
   composer.addPass(bloomPass);
   composer.addPass(plainPass);
+  composer.addPass(rainPass);
 
   const syncPassRouting = () => {
     const cloudsOn = Boolean(sky?.cloudsActive && cloudsPass && cloudsPlainPass);
@@ -1074,6 +1092,7 @@ export function createPostFx(
       if (cloudsPlainPass) cloudsPlainPass.mainCamera = next;
       bloomPass.mainCamera = next;
       plainPass.mainCamera = next;
+      rainPass.mainCamera = next;
     },
 
     setQuality(quality: "low" | "medium" | "high", msaa = true, bloom = quality === "high" && msaa): void {
@@ -1104,12 +1123,16 @@ export function createPostFx(
       }
       cloudsPlainPass = new EffectPass(mainCamera, next.clouds, ...toneMapAndGrade());
       cloudsPlainPass.mainCamera = mainCamera;
-      cloudsPlainPass.renderToScreen = true;
+      cloudsPlainPass.renderToScreen = false;
       cloudsPlainPass.enabled = false;
       composer.addPass(cloudsPass, 1);
       if (aerialPass) composer.addPass(aerialPass, 2);
-      composer.addPass(cloudsPlainPass);
+      composer.addPass(cloudsPlainPass, aerialPass ? 3 : 2);
       syncPassRouting();
+    },
+
+    setRainLens(state: RainLensState): void {
+      rainLens.setState(state);
     },
 
     setSharpness(amount: number): void {
@@ -1142,6 +1165,7 @@ export function createPostFx(
       cloudsPlainPass?.dispose();
       bloomPass.dispose();
       plainPass.dispose();
+      rainPass.dispose();
       composer.dispose();
     },
   };

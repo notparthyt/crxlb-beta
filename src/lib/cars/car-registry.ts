@@ -30,6 +30,7 @@ import { carListed, REPO_CAR_IDS } from "@/lib/hosted-content";
  */
 export type CarId =
   | "lc26"
+  | "hyper-rb22"
   | "amg-gt3"
   | "bmw-m4-gt3"
   | "mtr-496r"
@@ -298,6 +299,24 @@ const ALL_CARS: readonly CarDefinition[] = [
     quality: "own",
     credit: QVIST_F1_2026,
     tyreCredit: { author: "Purple Sector", url: "https://www.patreon.com/cw/PurpleSector" },
+    physics: "lc26",
+    year: 2026,
+    sound: F1_2026_SOUND,
+  },
+  {
+    id: "hyper-rb22",
+    classId: "f1",
+    title: "2026 Red Bull RB22",
+    sub: "RB22 model · 2026 LibreCorsa F1 physics",
+    badge: "RB22",
+    quality: "shared",
+    credit: {
+      title: "2026 Redbull RB22",
+      author: "Tyler_Dave",
+      url: "https://sketchfab.com/3d-models/2026-redbull-rb22-0a3d24a58e0549d591a5a48c22eec383",
+      license: "CC BY 4.0",
+      licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    },
     physics: "lc26",
     year: 2026,
     sound: F1_2026_SOUND,

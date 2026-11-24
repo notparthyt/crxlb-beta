@@ -13,6 +13,7 @@ import { disposeTree } from "@/lib/render/dispose-tree";
 import { setKtx2Renderer } from "@/lib/render/ktx2";
 import { Gt3DashDisplay, gt3MirrorPatches } from "@/lib/render/gt3-dash-display";
 import { createPortedCarRig } from "@/lib/ported-car-model";
+import { createRB22CarRig } from "@/lib/rb22-car-rig";
 import { defaultGtTyreBrand, resolveGtTyreBrand } from "@/lib/render/gt-tyre-sidewall";
 import { staticFloorOf } from "@/lib/render/body-floor";
 import { FloorSparks } from "@/lib/render/floor-sparks";
@@ -1440,7 +1441,8 @@ export class DriveSession {
     // A circuit raced under lights: its floodlit night (masts, lit tunnels, the model's glowing light sources),
     // or one whose own model has lamps (street lamps, light poles): they glow and light the ground round them
     let venueNight: VenueNightLighting | null = null;
-    const lampSpec = track.nightLighting ? null : circuitNightSpec(trackId);
+    const circuitSpec = circuitNightSpec(trackId);
+    const lampSpec = track.nightLighting ? null : circuitSpec;
     /**
      * Sets the night lighting up once the circuit's model is in. A circuit with lamps of its own waits until its
      * session can get dark: the lighting costs a map, a texture read on every circuit material and a shader compile
@@ -1449,9 +1451,13 @@ export class DriveSession {
     const ensureVenueNight = (root: THREE.Object3D) => {
       if (venueNight || disposed) return;
       if (!track.nightLighting && !(lampSpec && canSessionGetDark(getTrackEnv().weather.conditions))) return;
-      const modelLamps = lampSpec ? applyCircuitNightLights(root, track, lampSpec) : [];
+      const circuitLights = lampSpec ? applyCircuitNightLights(root, track, lampSpec) : null;
       const mode = lampSpec?.mode ?? "floodlit";
-      venueNight = createVenueNightLighting(root, track, track.nightLighting ?? {}, { mode, modelLamps });
+      venueNight = createVenueNightLighting(root, track, track.nightLighting ?? {}, {
+        mode,
+        modelLamps: circuitLights?.lamps,
+        look: circuitSpec?.nightLook,
+      });
       venueNight.setQuality(settings.graphics.quality);
       venueNight.setNight(nightShareOf(getTrackEnv().weather.sun.elevationDeg));
       scene.add(venueNight.group);
@@ -1522,28 +1528,31 @@ export class DriveSession {
     const createCarRig = (car: CarId): SimCarRig => {
       const def = carById(car);
       const model = rigModel(car);
-      const rig = def.modelUrl
-        ? createPortedCarRig({
-            url: def.modelUrl,
-            chassis: model.rigConfig.chassis,
-            // the rim on screen turns with the player's own (its lock is the player's when they set one)
-            steerLockDeg: carWheelLockDeg(def.physics, settings.wheel.steerLockPerCar) / 2,
-            floor: staticFloorOf(model.rigConfig),
-            // every GT3 uses the AMG GT3's onboard and chase views, framed on its own steering wheel and front axle
-            cameraAnchors: model.gt3Cockpit ? gt3RigCameraAnchors : undefined,
-            // F1 cars from 2018 on wear the 2026 Pirelli sidewall (the SF71H on its 13" tyres too; the models' own are poor)
-            pirelliSidewall: def.classId === "f1" && def.year >= 2018,
-            // Non-F1 racing cars wear sagatron918's GT sidewall packs (optional `?tyres=<brand>` override for testing)
-            gtSidewall:
-              def.classId === "f1" || def.classId === "road"
-                ? null
-                : (resolveGtTyreBrand(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tyres") : null) ??
-                  defaultGtTyreBrand(def.id, def.classId)),
-            skin: skinFor(car),
-          })
-        : model.gt3Cockpit
-          ? createGt3CarRig()
-          : createF1Car2026(livery, physics.tireCompound);
+      const rig =
+        def.id === "hyper-rb22"
+          ? createRB22CarRig(model.rigConfig.chassis, livery)
+          : def.modelUrl
+            ? createPortedCarRig({
+                url: def.modelUrl,
+                chassis: model.rigConfig.chassis,
+                // the rim on screen turns with the player's own (its lock is the player's when they set one)
+                steerLockDeg: carWheelLockDeg(def.physics, settings.wheel.steerLockPerCar) / 2,
+                floor: staticFloorOf(model.rigConfig),
+                // every GT3 uses the AMG GT3's onboard and chase views, framed on its own steering wheel and front axle
+                cameraAnchors: model.gt3Cockpit ? gt3RigCameraAnchors : undefined,
+                // F1 cars from 2018 on wear the 2026 Pirelli sidewall (the SF71H on its 13" tyres too; the models' own are poor)
+                pirelliSidewall: def.classId === "f1" && def.year >= 2018,
+                // Non-F1 racing cars wear sagatron918's GT sidewall packs (optional `?tyres=<brand>` override for testing)
+                gtSidewall:
+                  def.classId === "f1" || def.classId === "road"
+                    ? null
+                    : (resolveGtTyreBrand(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tyres") : null) ??
+                      defaultGtTyreBrand(def.id, def.classId)),
+                skin: skinFor(car),
+              })
+            : model.gt3Cockpit
+              ? createGt3CarRig()
+              : createF1Car2026(livery, physics.tireCompound);
       rig.setLivery(livery);
       rig.setTireCompound(physics.tireCompound);
       reflectionProbe.track(rig.root);
@@ -1594,6 +1603,7 @@ export class DriveSession {
       carRigCar = car;
       carHeadlights = new CarHeadlights(car, { spotCount: desiredHeadlightSpots() });
       carHeadlights.attach(carRig.chassisGroup);
+      visualFx.setRb22ForAi(car === "hyper-rb22");
       // A different model for the opponents and the ghost: build and compile them now, not at the next race start
       void visualFx.prewarm(carPhysics(car)).then(() => {
         if (disposed) return;
@@ -1602,7 +1612,7 @@ export class DriveSession {
     };
 
     // Persistent 4-Wheel Skidmarks, Instanced Tire Smoke/Gravel & Multiplayer/AI Opponent Renderer
-    const visualFx = new SimVisualFxManager();
+    const visualFx = new SimVisualFxManager(initialCar === "hyper-rb22");
     scene.add(visualFx.group);
     // The opponents and the ghost reflect the world too
     reflectionProbe.track(visualFx.group);
@@ -3860,7 +3870,7 @@ export class DriveSession {
       if (carFovDeg !== this.snapshot.carCockpitFovDeg) setCarCockpitFov(carFovDeg);
       const onboardFovShift = settings.cockpitFovDeg === null ? 0 : settings.cockpitFovDeg - carFovDeg;
       // The procedural helmet goes once the LC26 model (with its own driver) has replaced the procedural car
-      carRig.helmetGroup.visible = !lc26Cams;
+      carRig.helmetGroup.visible = !lc26Cams || carRig.hasDriverInHelmetGroup === true;
       // From the driver's eye point the helmet would fill the view: the camera leaves its layer out, while the
       // sun's shadow camera keeps it so the head still shadows the cockpit
       if (view.driverEye) camera.layers.disable(DRIVER_HEAD_LAYER);
@@ -4266,6 +4276,26 @@ export class DriveSession {
           wx.windVzMs,
           THREE.MathUtils.clamp(sprayWake, 0, 1)
         );
+        const lensWetness = wetnessFromWater(wx.lineWaterMm);
+        const lensRain =
+          wx.rainIntensity > 0.65
+            ? wx.rainIntensity
+            : wx.rainIntensity > 0.05
+              ? Math.max(0.25, wx.rainIntensity * 0.55)
+              : lensWetness > 0.25
+                ? 0.18 + lensWetness * 0.2
+                : 0;
+        postFx.setRainLens({
+          time: nowMs / 1000,
+          rain: lensRain,
+          wetness: lensWetness,
+          speed: physics.telemetry.speedKmh / 3.6,
+          enabled:
+            (mode === "cockpit" || mode === "dash" || mode === "tv_pod") &&
+            !inVr &&
+            !inMenu &&
+            !podium.playing,
+        });
         env.update(physics.worldPosition, camera);
         startupMonitor?.begin();
         // Not in the aerial tour or while paused (once primed): reflections are static when the scene is frozen

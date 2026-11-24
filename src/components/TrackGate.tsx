@@ -106,7 +106,12 @@ export const TrackGate: React.FC = () => {
   return (
     <>
       <RenderProfiler id="sim">
-        <LibreCorsaSimulator key={`${trackId}:${mount}`} trackId={trackId} onSelectTrack={select} onRestart={restart} />
+        <LibreCorsaSimulator
+          key={`${trackId}:${mount}`}
+          trackId={trackId}
+          onSelectTrack={select}
+          onRestart={restart}
+        />
       </RenderProfiler>
       {/* Over the menus: a failed circuit load is said wherever the player is */}
       <div

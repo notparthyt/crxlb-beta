@@ -21,7 +21,7 @@ export interface RacingLineMask {
 /** Margin around the racing line covered by the mask (m) */
 const MASK_MARGIN_M = 40;
 /** Normal bump strength multiplier on the aggregate noise (dimensionless gradient scale) */
-const AGGREGATE_NORMAL_SCALE = 0.3;
+const AGGREGATE_NORMAL_SCALE = 0.12;
 
 const maskCache = new WeakMap<BuiltTrackData, Map<string, RacingLineMask>>();
 

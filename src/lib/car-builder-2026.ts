@@ -31,6 +31,8 @@ export interface SimCarRig {
   root: THREE.Group;
   chassisGroup: THREE.Group;
   helmetGroup: THREE.Group;
+  /** The rig's own skinned driver is attached here instead of the procedural helmet */
+  hasDriverInHelmetGroup?: boolean;
   setLivery: (livery: LiveryConfig) => void;
   /** A ported car's own livery (`PortedSkin`), or null for the paint its model was made in */
   setSkin?: (skin: PortedSkin | null) => void | Promise<void>;

@@ -86,6 +86,7 @@ const LAMP_COLOR = 0xfff4e2;
 const LAMP_POOL_PEAK = 0.9;
 const LAMP_NIGHT_INTENSITY = 9;
 const LAMP_DAY_INTENSITY = 0.25;
+const MAX_MODEL_SPOTLIGHTS = 12;
 
 interface NightEmissive {
   day: number;
@@ -602,8 +603,10 @@ export function createVenueNightLighting(
     mapSize?: number;
     /** "floodlit" (the default, as track data `nightLighting`): the night's key light is the venue's; "lamps": moonlit */
     mode?: CircuitNightMode;
-    /** Lamps of the circuit's own model (circuit-night-lights.ts): pools and glow points, no masts */
+    /** Lamps of the circuit's own model (circuit-night-lights.ts): pools and fixture beams, no masts */
     modelLamps?: readonly ModelLamp[];
+    /** Optional overrides to the standard floodlit look */
+    look?: Partial<FloodlitNightLook>;
   } = {}
 ): VenueNightLighting {
   const group = new THREE.Group();
@@ -611,6 +614,7 @@ export function createVenueNightLighting(
   const disposables: { dispose(): void }[] = [];
   const mode = opts.mode ?? "floodlit";
   const modelLamps = opts.modelLamps ?? [];
+  const look: Readonly<FloodlitNightLook> = { ...VENUE_NIGHT_LOOK, ...opts.look };
 
   // --- The venue map on the circuit's own materials ---------------------------
   const map = buildVenueMap(root, track, def, opts.mapSize ?? 2048, mode, modelLamps);
@@ -723,28 +727,55 @@ export function createVenueNightLighting(
     if (sprite) disposables.push(sprite);
   }
 
-  // --- The model's own lamps: a glow point under each head (one draw per size and colour) -------------
-  const lampGlowMaterials: THREE.PointsMaterial[] = [];
-  const lampSprite = modelLamps.some((l) => l.glowSizeM > 0) ? glowSprite() : null;
+  // Real grandstand floodlights illuminate the model with a night-controlled spotlight, not a self-lit stand texture.
+  const beamLamps = modelLamps.filter((lamp) => lamp.beam).sort((a, b) => a.s - b.s);
+  const modelSpotlights: { light: THREE.SpotLight; intensity: number }[] = [];
+  const spotlightCount = Math.min(MAX_MODEL_SPOTLIGHTS, beamLamps.length);
+  for (let i = 0; i < spotlightCount; i++) {
+    const lamp = beamLamps[Math.floor((i * beamLamps.length) / spotlightCount)];
+    const beam = lamp.beam;
+    if (!beam) continue;
+    const light = new THREE.SpotLight(lamp.color, 0, beam.distanceM, beam.angleRad, beam.penumbra, 2);
+    light.castShadow = false;
+    light.position.set(lamp.x, lamp.y, lamp.z);
+    light.target.position.set(
+      lamp.x + lamp.towardX * lamp.roadDistM,
+      lamp.y - lamp.heightM,
+      lamp.z + lamp.towardZ * lamp.roadDistM
+    );
+    group.add(light, light.target);
+    modelSpotlights.push({ light, intensity: beam.intensity });
+  }
+
+  // --- Halos at the circuit's actual lamp fixtures (one draw per size and colour) -----------------------
+  const glowPointMaterials: THREE.PointsMaterial[] = [];
+  const glowPoints = modelLamps
+    .filter((lamp) => lamp.glowSizeM > 0)
+    .map((lamp) => ({
+      x: lamp.x + lamp.towardX * 0.3,
+      y: lamp.y - 0.35,
+      z: lamp.z + lamp.towardZ * 0.3,
+      color: lamp.color,
+      sizeM: lamp.glowSizeM,
+    }));
+  const lampSprite = glowPoints.length ? glowSprite() : null;
   if (lampSprite) disposables.push(lampSprite);
-  const buckets = new Map<string, ModelLamp[]>();
-  for (const lamp of modelLamps) {
-    if (lamp.glowSizeM <= 0) continue;
-    const key = `${lamp.glowSizeM}|${lamp.color}`;
+  const buckets = new Map<string, (typeof glowPoints)[number][]>();
+  for (const point of glowPoints) {
+    const key = `${point.sizeM}|${point.color}`;
     const list = buckets.get(key);
-    if (list) list.push(lamp);
-    else buckets.set(key, [lamp]);
+    if (list) list.push(point);
+    else buckets.set(key, [point]);
   }
   for (const list of buckets.values()) {
     const positions = new Float32Array(list.length * 3);
-    // just under the head, a little toward the road: where its lamps face
-    list.forEach((l, i) => positions.set([l.x + l.towardX * 0.3, l.y - 0.35, l.z + l.towardZ * 0.3], i * 3));
+    list.forEach((point, i) => positions.set([point.x, point.y, point.z], i * 3));
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const material = new THREE.PointsMaterial({
       map: lampSprite,
       color: list[0].color,
-      size: list[0].glowSizeM,
+      size: list[0].sizeM,
       sizeAttenuation: true,
       transparent: true,
       opacity: 0,
@@ -756,9 +787,9 @@ export function createVenueNightLighting(
     points.frustumCulled = false;
     points.matrixAutoUpdate = false;
     points.renderOrder = 3;
-    points.name = "VenueLampGlow";
+    points.name = "VenueGlow";
     group.add(points);
-    lampGlowMaterials.push(material);
+    glowPointMaterials.push(material);
     disposables.push(geometry, material);
   }
 
@@ -769,11 +800,12 @@ export function createVenueNightLighting(
     uniforms.uLcVenueNight.value = k;
     for (const { mat, spec } of lit) mat.emissiveIntensity = spec.day + (spec.night - spec.day) * k;
     if (headMaterial) headMaterial.emissiveIntensity = LAMP_DAY_INTENSITY + (LAMP_NIGHT_INTENSITY - LAMP_DAY_INTENSITY) * k;
+    for (const { light, intensity } of modelSpotlights) light.intensity = intensity * k;
     if (glowMaterial) {
       glowMaterial.opacity = glowGain * k;
       glowMaterial.visible = k > 0.02;
     }
-    for (const mat of lampGlowMaterials) {
+    for (const mat of glowPointMaterials) {
       mat.opacity = glowGain * k;
       mat.visible = k > 0.02;
     }
@@ -781,7 +813,7 @@ export function createVenueNightLighting(
 
   const api: VenueNightLighting = {
     group,
-    look: VENUE_NIGHT_LOOK,
+    look,
     mode,
     lightAt(x: number, z: number, out: THREE.Color): THREE.Color {
       const k = Math.max(0, night);

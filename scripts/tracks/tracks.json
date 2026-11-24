@@ -553,5 +553,109 @@
       "license": "Used with permission",
       "licenseUrl": "https://www.overtake.gg/downloads/willow-springs-big-willow.32338/"
     }
+  },
+  "interlagos_f1_2023": {
+    "folder": "vhe_interlagos",
+    "name": "Autódromo José Carlos Pace",
+    "layout": "F1 2023 layout",
+    "country": "Brazil",
+    "city": "São Paulo",
+    "baseAltitudeM": 760,
+    "credit": {
+      "title": "Interlagos F1 2023",
+      "author": "VheEth; Pyyer (2023 extension); original circuit by Reiza Studios; AI by KevinK2; cameras by DaBaeda; trees/RainFX by TheRealCeeBee; grid/pit/sectors by slider666 and norms; camerafacing by Ema",
+      "url": "https://www.mediafire.com/file/er3p9u015xjsusy/vhe_interlagos_1.1.rar/file",
+      "short": null,
+      "license": "Permission unverified; private local conversion only",
+      "licenseUrl": null
+    }
+  },
+  "yas_marina_2021": {
+    "folder": "abu_dhabi_2021_chq",
+    "name": "Yas Marina Circuit",
+    "layout": "2021 Grand Prix layout",
+    "country": "United Arab Emirates",
+    "city": "Abu Dhabi",
+    "baseAltitudeM": 10,
+    "credit": {
+      "title": "Abu Dhabi 2021 CHQ v0.9",
+      "author": "CHiQuiFReaKy",
+      "url": "https://www.overtake.gg/downloads/categories/ac-tracks.8/",
+      "short": null,
+      "license": "Permission unverified; private local conversion only",
+      "licenseUrl": null
+    },
+    "defaultTimeOfDay": "night"
+  },
+  "sepang_chq_2026": {
+    "folder": "chq_sepang",
+    "name": "Sepang International Circuit",
+    "layout": "Grand Prix layout",
+    "country": "Malaysia",
+    "city": "Sepang",
+    "baseAltitudeM": 20,
+    "credit": {
+      "title": "CHQ Sepang 2.0 - 2026",
+      "author": "CHiQuiFReaKy",
+      "authorUrl": "https://www.youtube.com/channel/UC4Wtx3ivRyBx6IUe7K72HUQ",
+      "url": "https://www.patreon.com/CHiQuiFReaKy",
+      "short": "https://mega.nz/file/ReZGyLab#kjpqtdDD-A5VDqRtYAMcmdszCveRXc3WLPVbr-0Z46M",
+      "license": "Used with creator permission; credit required",
+      "licenseUrl": "https://www.patreon.com/CHiQuiFReaKy"
+    }
+  },
+  "spa_fenryr_2025": {
+    "folder": "fn_spa",
+    "name": "Circuit de Spa-Francorchamps",
+    "layout": "2025 Grand Prix layout",
+    "country": "Belgium",
+    "city": "Stavelot",
+    "baseAltitudeM": 420,
+    "credit": {
+      "title": "Spa-Francorchamps 2025",
+      "author": "@fenryr",
+      "authorUrl": "https://www.assetto-fr.com/asphalt/belgium/",
+      "url": "https://www.assetto-fr.com/asphalt/belgium/",
+      "short": null,
+      "license": "Non-commercial use with creator permission; credit @fenryr",
+      "licenseUrl": "https://www.assetto-fr.com/asphalt/belgium/"
+    }
+  },
+  "shanghai_blckbox_2021": {
+    "folder": "blckbox_shanghai",
+    "name": "Shanghai International Circuit",
+    "layout": "Grand Prix layout (Advanced)",
+    "country": "China",
+    "city": "Shanghai",
+    "baseAltitudeM": 5,
+    "credit": {
+      "title": "BLCKBOX Shanghai International Circuit - Advanced (2021)",
+      "author": "BLCKBOX, Bug3721",
+      "authorUrl": "http://www.trmod.top/author/bug3721",
+      "url": "http://www.trmod.top/426.html",
+      "short": null,
+      "license": "Non-commercial conversion and play permitted by AssettoCorsaOfficial; source URLs required",
+      "licenseUrl": "http://www.trmod.top/426.html",
+      "note": "The archive credits BLCKBOX and Bug3721 and lists https://simracing.blckbox.net as its URL. The linked TRMOD entry is the earlier v1.2 base-track page."
+    }
+  },
+  "monaco_asw_2022": {
+    "folder": "monaco_gp22",
+    "name": "Circuit de Monaco",
+    "layout": "2022 Grand Prix layout",
+    "country": "Monaco",
+    "city": "Monte Carlo",
+    "baseAltitudeM": 15,
+    "credit": {
+      "title": "2022 Monaco F1 Grand Prix",
+      "author": "Pyyer (track), Blackcelica (skins), KevenK2 and TheRealCeeBee (extensions)",
+      "authorUrl": "https://www.patreon.com/pyyer",
+      "url": "https://www.patreon.com/pyyer",
+      "short": null,
+      "license": "Non-commercial conversion and play permitted by AssettoCorsaOfficial; source URLs required",
+      "licenseUrl": "https://www.patreon.com/pyyer",
+      "note": "The archive README also credits Cozy61 for the included AI instructions; the bundled DYNAMIC_OBJECT is omitted because runtime placement is not supported in the static conversion."
+    },
+    "type": "street"
   }
 }

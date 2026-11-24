@@ -429,7 +429,7 @@ const Credits: React.FC = () => (
           · used with permission
         </CreditRow>
         {LISTED_TRACKS.some((t) => t.credit) ? (
-          <CreditRow title="Circuits">
+          <CreditRow title="Assetto Corsa Maps Used">
             {LISTED_TRACKS.filter((t, i, arr) => t.credit && arr.findIndex((o) => o.credit?.url === t.credit?.url) === i).map((t) => (
               <React.Fragment key={t.id}>
                 &ldquo;{t.credit!.title}&rdquo; (
@@ -642,7 +642,8 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
   const raceSetup = props.raceSetup ?? DEFAULT_RACE_SETUP;
   const vehicle = carById(props.carId);
   // The car is fixed for an online race (the shell refuses the swap too)
-  const carLocked = props.telemetry.race?.multiplayer === true || props.raceRunning === true;
+  const liveRace = props.telemetry.race?.multiplayer === true || props.raceRunning === true;
+  const carLocked = liveRace;
   // A hill climb is driven one car at a time, from the start line to the finish: no races against the AI
   const hillClimb = activeTrackId === trackId && getActivePointToPoint() !== null;
   const localLaps = props.leaderboardPanel?.local;
@@ -676,10 +677,10 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
       id: "multiplayer",
       label: "Multiplayer",
       icon: "multiplayer" as const,
-      panel: "multiplayer",
+      panel: "multiplayer" as const,
       run: () => openPanel("multiplayer"),
       badge: props.races?.entry.state === "joined" ? "Entered" : lobbyPlayers > 1 ? `${lobbyPlayers} in lobby` : undefined,
-    },
+    } satisfies MenuItem,
     ...(props.challengePanel
       ? [
           {
@@ -706,9 +707,9 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
       label: "Car",
       detail: carLocked ? `${vehicle.title} · locked` : vehicle.title,
       icon: "car" as const,
-      panel: "car",
+      panel: "car" as const,
       run: () => openPanel("car"),
-    },
+    } satisfies MenuItem,
     ...(props.conditionsPanel
       ? [
           {
@@ -948,7 +949,7 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
             {/* Below lg the rail would stack 13 rows above the panel: the panel takes the screen, Close goes back */}
             <nav className="flex flex-col gap-0.5 max-lg:hidden" data-nav-zone="rail" aria-label="Main menu">
               <HeroAction id={drive.id} label={drive.label} onClick={drive.run!} size="slim" />
-              {byId(["race", "multiplayer", "challenge"]).map((item) => row(item, "md", true))}
+              {byId(["hyper-mode", "race", "multiplayer", "challenge"]).map((item) => row(item, "md", true))}
               <div aria-hidden className="h-3" />
               {byId(["circuit", "car", "conditions", "garage", "leaderboard", "settings"]).map((item) => row(item, "md", true))}
               <div aria-hidden className="h-3" />
@@ -1015,7 +1016,12 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
                       lockedReason={carLocked ? "Fixed for this race" : undefined}
                     />
                   ) : null}
-                  {panel === "garage" ? <EngineersGarage {...props} onOpenCarBrowser={() => openPanel("car")} /> : null}
+                  {panel === "garage" ? (
+                    <EngineersGarage
+                      {...props}
+                      onOpenCarBrowser={() => openPanel("car")}
+                    />
+                  ) : null}
                   {panel === "multiplayer" ? (
                     <MultiplayerPanel
                       {...props}
@@ -1062,7 +1068,7 @@ export const TitleMenu: React.FC<TitleMenuProps> = (props) => {
             >
               <div className="flex flex-col gap-1 phone:gap-0.5">
                 <HeroAction id={drive.id} label={drive.label} detail={drive.detail} onClick={drive.run!} />
-                {byId(["race", "multiplayer", "challenge"]).map((item) => row(item, "lg"))}
+                {byId(["hyper-mode", "race", "multiplayer", "challenge"]).map((item) => row(item, "lg"))}
               </div>
               <div className="flex flex-col gap-3 pt-4 compact:pt-2 short:pt-0">
                 <div className="grid grid-cols-1 gap-1 min-[360px]:grid-cols-2">

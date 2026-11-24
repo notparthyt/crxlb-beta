@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { BuiltTrackData } from "@/lib/track-data";
+import type { FloodlitNightLook } from "./golden-hour-environment";
 
 /*
  * The lamps a circuit's own model already has (street lamps, light poles, portable light towers, mast heads): at night
@@ -31,6 +32,15 @@ export interface CircuitLampGroup {
   pool: number;
   /** Size of each glow point (m); 0 for none */
   glowSizeM: number;
+  /** Optional real spotlight beam, aimed toward the road from each detected fixture */
+  beam?: CircuitLampBeam;
+}
+
+export interface CircuitLampBeam {
+  intensity: number;
+  distanceM: number;
+  angleRad: number;
+  penumbra: number;
 }
 
 export interface CircuitNightSpec {
@@ -40,15 +50,96 @@ export interface CircuitNightSpec {
    */
   mode: CircuitNightMode;
   lamps: readonly CircuitLampGroup[];
+  /** Architectural and vessel surfaces that glow at night */
+  emissiveSurfaces?: readonly CircuitEmissiveSurfaceGroup[];
+  /** Optional venue-specific ambient fill for shadowed areas at night */
+  nightLook?: Partial<FloodlitNightLook>;
+}
+
+export interface CircuitEmissiveSurfaceGroup {
+  /** Exact material names in the circuit model */
+  materials: readonly string[];
+  color: number;
+  glow: number;
 }
 
 const SODIUM = 0xffc27a;
 const WARM_WHITE = 0xfff0d8;
 const COOL_WHITE = 0xf1f4ff;
+const HOTEL_VIOLET = 0xb197ff;
 
 const RISE: CircuitNightSpec = {
   mode: "floodlit",
   lamps: [{ materials: ["Light_Lamp"], color: COOL_WHITE, glowMaterial: true, glow: 6, pool: 0.8, glowSizeM: 4.2 }],
+};
+const YAS_MARINA: CircuitNightSpec = {
+  mode: "floodlit",
+  nightLook: { fillColor: 0x64738a, fillIntensity: 0.55, environmentIntensity: 0.42, nightStars: 0, shadowIntensity: 0.1 },
+  lamps: [
+    {
+      materials: ["focos_altos_luces"],
+      color: COOL_WHITE,
+      glowMaterial: true,
+      glow: 10,
+      pool: 1.35,
+      glowSizeM: 6.5,
+    },
+    {
+      materials: ["focos_altos_gradas_luces"],
+      color: COOL_WHITE,
+      glowMaterial: true,
+      glow: 12,
+      pool: 1.75,
+      glowSizeM: 7.2,
+      beam: { intensity: 260, distanceM: 125, angleRad: 0.68, penumbra: 0.45 },
+    },
+    {
+      materials: ["focos_exit_pits_luces"],
+      color: COOL_WHITE,
+      glowMaterial: true,
+      glow: 9,
+      pool: 1.35,
+      glowSizeM: 4.2,
+    },
+    {
+      materials: ["focos_bajos_luces", "tunnel_light_light"],
+      color: COOL_WHITE,
+      glowMaterial: true,
+      glow: 8,
+      pool: 1.05,
+      glowSizeM: 3.6,
+    },
+  ],
+  emissiveSurfaces: [
+    {
+      materials: [
+        "abu_building_marinahotel_a_01",
+        "abu_building_marinahotel_a_02",
+        "abu_building_marinahotel_b_01",
+        "abu_building_marinahotelbridge_a_01",
+        "abu_building_marinahotelbridge_a_03",
+        "abu_building_marinahotelbottom_a_01",
+        "abu_building_marinahotelbottom_a_02",
+        "abu_building_marinahotelbase_a_01",
+        "abu_building_marinahotelbase_a_02",
+        "abu_building_marinahotelbase_a_03",
+        "abu_building_pittower_a_01",
+        "abu_building_pittower_a_02",
+      ],
+      color: COOL_WHITE,
+      glow: 0.65,
+    },
+    {
+      materials: ["abu_building_marinahotel_roof_a_01"],
+      color: HOTEL_VIOLET,
+      glow: 0.9,
+    },
+    {
+      materials: ["core_veh_boat_liner_01_a_02", "core_veh_boat_motor_04_b_02"],
+      color: COOL_WHITE,
+      glow: 1.1,
+    },
+  ],
 };
 const WATKINS: CircuitNightSpec = {
   mode: "lamps",
@@ -69,6 +160,7 @@ const SACHSENRING: CircuitNightSpec = {
 const CIRCUIT_NIGHT_SPECS: Readonly<Record<string, CircuitNightSpec>> = {
   rwanda_official: RISE,
   rwanda_official_short: RISE,
+  yas_marina_2021: YAS_MARINA,
   speedvegas: {
     mode: "lamps",
     lamps: [{ materials: ["lightpole_emitter"], color: WARM_WHITE, glowMaterial: true, glow: 6, pool: 1, glowSizeM: 3.2 }],
@@ -139,10 +231,13 @@ export interface ModelLamp {
   towardZ: number;
   /** Distance to the middle of the road (m) */
   roadDistM: number;
+  /** Distance along the lap used to distribute the limited real spotlight count */
+  s: number;
   /** Its group's light colour, pool strength and glow-point size */
   color: number;
   pool: number;
   glowSizeM: number;
+  beam?: CircuitLampBeam;
 }
 
 /** A material that glows at night (venue-night-lighting.ts reads it from `userData.nightEmissive`) */
@@ -165,7 +260,11 @@ const MIN_LAMP_HEIGHT_M = 1.6;
  * Finds a circuit's lamps in its loaded model, makes the glowing ones glow at night (`userData.nightEmissive`) and
  * returns where each lamp is. Call before `createVenueNightLighting`, which picks the glowing materials up.
  */
-export function applyCircuitNightLights(root: THREE.Object3D, track: BuiltTrackData, spec: CircuitNightSpec): ModelLamp[] {
+export function applyCircuitNightLights(
+  root: THREE.Object3D,
+  track: Pick<BuiltTrackData, "projectWorldToTrack">,
+  spec: CircuitNightSpec
+): { lamps: ModelLamp[] } {
   const lamps: ModelLamp[] = [];
   root.updateWorldMatrix(true, true);
   const v = new THREE.Vector3();
@@ -188,7 +287,7 @@ export function applyCircuitNightLights(root: THREE.Object3D, track: BuiltTrackD
         if (!mat || !names.has(mat.name)) continue;
         if (group.glowMaterial && !tagged.has(mat)) {
           tagged.add(mat);
-          makeLampGlow(mat, group);
+          makeLampGlow(mat, group.color, group.glow ?? 5);
         }
         const total = index ? index.count : pos.count;
         const count = Math.min(g.count, total - g.start);
@@ -211,18 +310,35 @@ export function applyCircuitNightLights(root: THREE.Object3D, track: BuiltTrackD
       if (lamp) lamps.push(lamp);
     }
   }
-  return lamps;
+  for (const surface of spec.emissiveSurfaces ?? []) {
+    const names = new Set(surface.materials);
+    const tagged = new Set<THREE.Material>();
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      if (!mats.some((mat) => names.has(mat.name))) return;
+      for (const mat of mats) {
+        if (names.has(mat.name) && !tagged.has(mat)) {
+          tagged.add(mat);
+          makeLampGlow(mat, surface.color, surface.glow);
+        }
+      }
+    });
+  }
+  return { lamps };
 }
 
 /** The material glows in its lamp's colour at night: where it has a texture, by that texture (a lens, a lit panel) */
-function makeLampGlow(mat: THREE.MeshStandardMaterial, group: CircuitLampGroup): void {
-  if (!mat.isMeshStandardMaterial) return;
-  mat.emissive.setHex(group.color);
-  if (!mat.emissiveMap && mat.map) mat.emissiveMap = mat.map;
-  mat.emissiveIntensity = 0;
-  const spec: NightEmissiveSpec = { day: 0, night: group.glow ?? 5, spill: false };
-  mat.userData.nightEmissive = spec;
-  mat.needsUpdate = true;
+function makeLampGlow(mat: THREE.Material, color: number, glow: number): void {
+  if (!(mat instanceof THREE.MeshStandardMaterial)) return;
+  const standard = mat;
+  standard.emissive.setHex(color);
+  if (!standard.emissiveMap && standard.map) standard.emissiveMap = standard.map;
+  standard.emissiveIntensity = 0;
+  const spec: NightEmissiveSpec = { day: 0, night: glow, spill: false };
+  standard.userData.nightEmissive = spec;
+  standard.needsUpdate = true;
 }
 
 /** Point indices grouped by touching grid cells (one lamp each) */
@@ -262,7 +378,12 @@ function clusterPoints(pts: number[]): number[][] {
 }
 
 /** A cluster's lamp: its head is the middle of its topmost metre */
-function lampOf(pts: number[], members: number[], track: BuiltTrackData, group: CircuitLampGroup): ModelLamp | null {
+function lampOf(
+  pts: number[],
+  members: number[],
+  track: Pick<BuiltTrackData, "projectWorldToTrack">,
+  group: CircuitLampGroup
+): ModelLamp | null {
   let top = -Infinity;
   for (const i of members) top = Math.max(top, pts[i * 3 + 1]);
   let sx = 0;
@@ -291,8 +412,10 @@ function lampOf(pts: number[], members: number[], track: BuiltTrackData, group: 
     towardX: d > 1e-3 ? dx / d : 0,
     towardZ: d > 1e-3 ? dz / d : 0,
     roadDistM: d,
+    s: near.s,
     color: group.color,
     pool: group.pool,
     glowSizeM: group.glowSizeM,
+    beam: group.beam,
   };
 }

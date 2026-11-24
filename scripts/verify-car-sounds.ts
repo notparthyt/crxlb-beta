@@ -39,6 +39,7 @@ function check(name: string, cond: boolean, detail = ""): void {
 
 const EXPECTED_SOUNDS: Record<CarId, { sound: CarSoundSource; maxIdleRpm: number }> = {
   lc26: { sound: F1_2026_SOUND, maxIdleRpm: 4200 },
+  "hyper-rb22": { sound: F1_2026_SOUND, maxIdleRpm: 4200 },
   "amg-gt3": { sound: AMG_GT3_SOUND, maxIdleRpm: 1600 },
   "bmw-m4-gt3": { sound: BMW_M4_GT3_SOUND, maxIdleRpm: 1600 },
   liana: { sound: SUZUKI_LIANA_SOUND, maxIdleRpm: 1000 },

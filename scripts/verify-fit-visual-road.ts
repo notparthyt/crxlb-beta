@@ -75,6 +75,33 @@ function positions(root: THREE.Object3D): THREE.BufferAttribute[] {
   check('crossover: the upper road\'s line moves with its own asphalt', upper.every((y) => Math.abs(y - 4.93) < 1e-5), upper.map((y) => y.toFixed(4)).join(' '));
 }
 
+// A track-specific wider window corrects the asphalt without moving nearby scenery
+{
+  const quad = (y: number, name: string) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute([-1, y, -1, 1, y, -1, 1, y, 1, -1, y, 1], 3));
+    g.setIndex([0, 2, 1, 0, 3, 2]);
+    return new THREE.Mesh(g, new THREE.MeshBasicMaterial({ name }));
+  };
+  const root = new THREE.Group();
+  const tm = new THREE.Group();
+  tm.name = 'Track_Model';
+  root.add(tm);
+  const asphalt = quad(0.5, 'Asphalt');
+  const scenery = quad(0.5, 'Scenery');
+  tm.add(asphalt, scenery);
+  const ground = {
+    query(_x: number, _z: number, _probeY: number, out: { height: number; surface: string }) {
+      out.height = 0;
+      out.surface = 'road';
+      return true;
+    },
+  } as unknown as GroundQuery;
+  fitVisualRoad(root, ground, ['Asphalt'], { roadFitWindowM: 0.6 });
+  check('wider fit window: asphalt reaches the ground', asphalt.geometry.getAttribute('position').getY(0) === 0);
+  check('wider fit window: nearby scenery keeps its height', scenery.geometry.getAttribute('position').getY(0) === 0.5);
+}
+
 // What lies on the ground casts no shadow (`onGround`); what stands up (a wall, a post, a deck) keeps it, also merged
 // into flat road or in a road material. Ground at 0 m for x < 4 and none further out; a dip to -0.5 m for 0.5 < x < 4
 // where a test asks for one
@@ -124,7 +151,7 @@ function positions(root: THREE.Object3D): THREE.BufferAttribute[] {
 }
 
 const tracksDir = path.join('public', 'tracks');
-type TrackJson = RawTrackJson & { metadata?: { mesh?: { url?: string; conformSurfaces?: boolean; roadMaterials?: string[] } } };
+type TrackJson = RawTrackJson & { metadata?: { mesh?: { url?: string; conformSurfaces?: boolean; roadMaterials?: string[]; visualRoadFitWindowM?: number } } };
 const wanted = process.argv.slice(2);
 const ids = (wanted.length ? wanted : readdirSync(tracksDir)).filter((id) => existsSync(path.join(tracksDir, id, 'track_data.json'))).sort();
 const done = new Set<string>();
@@ -143,9 +170,9 @@ for (const id of ids) {
   const original = positions(before).map((p) => (p.array as Float32Array).slice());
   const t0 = performance.now();
   const roadMaterials = raw.metadata?.mesh?.roadMaterials ?? [];
-  fitVisualRoad(before, groundBefore, roadMaterials, { everyVertex: true });
+  fitVisualRoad(before, groundBefore, roadMaterials, { everyVertex: true, roadFitWindowM: raw.metadata?.mesh?.visualRoadFitWindowM });
   const t1 = performance.now();
-  fitVisualRoad(after, groundAfter, roadMaterials);
+  fitVisualRoad(after, groundAfter, roadMaterials, { roadFitWindowM: raw.metadata?.mesh?.visualRoadFitWindowM });
   const t2 = performance.now();
   const a = positions(before);
   const b = positions(after);

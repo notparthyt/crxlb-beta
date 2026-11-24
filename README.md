@@ -31,7 +31,7 @@
   <a href="https://librecorsa.org/media/librecorsa-trailer.mp4"><img src="docs/media/trailer-poster.jpg" alt="Watch the 40-second LibreCorsa trailer" width="100%" /></a>
 </p>
 
-**LibreCorsa** is an open-source racing simulator that runs entirely in the browser. It has 500 Hz vehicle dynamics, a thermal tyre model, a 2026-regulation open-wheeler, GT3 cars, two prototypes, two classic Skyline GT-Rs and a road car. There are fourteen circuits and two hill climbs, AI races, ghosts and replays, peer-to-peer multiplayer and an open online race every 20 minutes. It works with a keyboard, gamepad, touch screen or a force-feedback wheel. Nothing to install: the game is a static site, and an optional Cloudflare Worker runs the online side.
+**LibreCorsa** is an open-source racing simulator that runs entirely in the browser. It has 500 Hz vehicle dynamics, a thermal tyre model, a 2026-regulation open-wheeler, GT3 cars, two prototypes, two classic Skyline GT-Rs and a road car. The upstream build has fourteen circuits and two hill climbs, AI races, ghosts and replays, peer-to-peer multiplayer and an open online race every 20 minutes. This conversion copy also has a selectable RB22 car, local Interlagos F1 2023 and Yas Marina 2021 conversions (redistribution permission unverified), CHQ Sepang 2026 with creator permission and credit, and Spa-Francorchamps 2025 for non-commercial use with credit to Fenryr. It works with a keyboard, gamepad, touch screen or a force-feedback wheel. Nothing to install: the game is a static site, and an optional Cloudflare Worker runs the online side.
 
 <p align="center">
   <img src="docs/media/race-grid-rise.jpg" alt="Lined up on the grid at RISE Motordrome against five AI cars" width="100%" />
@@ -85,6 +85,7 @@ You can play straight in any modern browser at **[librecorsa.org](https://librec
 | Car | Model | Notes |
 | :-- | :-- | :-- |
 | **2026 Prototype** (default) | 6-DOF rigid body on the track colliders | 1.6 L V6 turbo + 350 kW MGU-K, 4 MJ battery, manual override boost; turbo boost that builds with exhaust energy while the MGU-K fills the lag; Z/X-mode aero with the flaps opened in every DRS zone, and Overtake Mode earned within 1 s at the detection point; live telemetry channels |
+| **2026 Red Bull RB22** | RB22 model on the existing 2026 F1 physics | Selectable F1 car; includes the driver rig and animation, AI visuals, and the shared weather and rain effects |
 | **Mercedes-AMG GT3 Evo** | 6-DOF rigid body | 6.2 L NA V8, 6-speed sequential, multi-stage ABS / TC, its own braking-point model. The BMW M4 GT3 Evo drives on its physics |
 | **MTRacing 496R** | 6-DOF rigid body | 2025 prototype: 4.0 L NA V8, rear-wheel drive, 6-speed paddle shift, heave springs, splitter / diffuser / rear-wing aero, TC, three slicks. 20 liveries, a live wheel screen and shift lights. Model, sound and physics from munyuturbo's mod of this car, used with permission |
 | **LC-LMDH** | 6-DOF rigid body | LMDh prototype: twin-turbo V8 with the class's spec hybrid on a 7-speed spec gearbox, rear-wheel drive, power capped at the driveshafts as the regulations set it, TC and no ABS |
@@ -98,6 +99,10 @@ Each car has its own cockpit, steering wheel and shift lights, plus a multi-laye
 | Circuit | Country | Length |
 | :-- | :-- | --: |
 | **RISE Motordrome** (default; short / Grand Prix lap) | Rwanda | 5.34 / 5.89 km |
+| **Interlagos** (F1 2023 layout; private local conversion) | Brazil | 4.32 km |
+| **Yas Marina** (2021 Grand Prix layout; private local conversion) | United Arab Emirates | 5.28 km |
+| **Sepang International Circuit** (CHQ 2026 update) | Malaysia | 5.54 km |
+| **Spa-Francorchamps** (2025 Grand Prix layout; non-commercial use) | Belgium | 7.00 km |
 | Chang International Circuit | Thailand | 4.57 km |
 | Okayama International Circuit (GP / Piper / Formula Drift) | Japan | 3.70 / 1.97 / 1.97 km |
 | Red Bull Ring, Spielberg (GP / South / Inner skill course) | Austria | 4.32 / 2.34 / 0.94 km |
@@ -234,7 +239,7 @@ npm run build            # static export into ./out
 The tech is **Next.js 16** (static export), **React 19**, **Three.js** (WebGL2, AgX tone mapping, PBR), the **Web Audio API**, **WebRTC**, **WebHID** and **Tailwind CSS 4**.
 
 ### What's in the repository
-A clone carries **RISE Motordrome** and the **2026 prototype car** (both versions: its body and sound in `public/cars/f12026/`), so `npm run dev` gives you a working game with those. Every other car and circuit is hosted on librecorsa.org only and is gitignored: the files sit in the `librecorsa-assets` R2 bucket, and `cloudflare/worker.js` serves them at the same paths. A clone lists only what it has (`src/lib/hosted-content.ts`); the deploy sets `NEXT_PUBLIC_HOSTED_CONTENT=1` to list everything, and you can set it in `.env.local` if you have the hosted files in `public/`. The verify suites skip checks that need files a clone doesn't have.
+A standard upstream clone carries **RISE Motordrome** and the **2026 prototype car** (both versions: its body and sound in `public/cars/f12026/`), so `npm run dev` gives you a working game with those. This conversion copy additionally has the RB22 model and Interlagos/Yas Marina conversions (their redistribution rights are unverified), CHQ Sepang 2026 with creator permission and attribution, and Spa-Francorchamps 2025 with Fenryr's permission for non-commercial use and credit. Hosted builds omit these local tracks until their assets are uploaded to the `librecorsa-assets` R2 bucket by `cloudflare/worker.js`. Other hosted cars and circuits are served from the same bucket. A clone lists only what it has (`src/lib/hosted-content.ts`); set `NEXT_PUBLIC_HOSTED_CONTENT=1` to list hosted content, and you can set it in `.env.local` if you have the hosted files in `public/`. The verify suites skip checks that need files a clone doesn't have.
 
 To add your own car, see **[Porting a car](docs/PORTING-CARS.md)**, and for a circuit, **[Porting a circuit](docs/PORTING-TRACKS.md)**. To publish a hosted car or circuit, upload its folder with `npm run upload-hosted -- public/cars/<id>` (car models go up compressed), then push to `main` so the edge cache picks it up.
 
@@ -257,7 +262,7 @@ The desktop app's Windows installer is built by GitHub Actions from this reposit
 ## License & credits
 
 - **Code** is under the [GNU Affero General Public License v3.0](LICENSE) or any later version (AGPL-3.0-or-later). You can use it, change it and host it, and if you run a changed version for other people, you share its source under the same licence. Code released before 15 November 2026 stays under the MIT License it came with.
-- **3D models and audio** are for non-commercial, personal and educational use. Each one keeps its own license. This repository carries only RISE Motordrome and the 2026 prototype's model and sound; the rest are served on librecorsa.org for playing there.
+- **3D models and audio** each keep their own license. The upstream repository carries RISE Motordrome and the 2026 prototype's model and sound; this private conversion copy also includes the RB22 and track assets described above. See [CREDITS.md](CREDITS.md), and do not redistribute assets whose permission is still unverified.
 - **Cars**: the 2026 Prototype's body is by **[Qvist Designs](https://qvistdesigns.framer.website/)** (CC BY 4.0), with the steering wheel from **DeX**'s AM26 model ([CC BY 4.0](https://skfb.ly/pKNCK)) and 2025 Pirelli tyres by **Purple Sector**. The Mercedes-AMG GT3 Evo is by **Vecarz** ([CC BY-NC-SA 4.0](https://sketchfab.com/3d-models/mercedes-amg-gt3-wwwvecarzcom-6a3f7e3455064721b74b7f0b66427a07)), the BMW M4 GT3 Evo by **Ddiaz Design** ([CC BY-NC-SA 4.0](https://sketchfab.com/3d-models/2025-bmw-m4-gt3-evo-g82-113f83dd87064697a5ec2511d280b9d5)), and the LC-LMDH's body by **kilianhoffmann13** ([CC BY 4.0](https://sketchfab.com/models/d786aa263a804254aa92543dda11dba0)). The MTRacing 496R is by **munyuturbo**, the two Skyline GT-Rs by **[gregsediting](https://www.patreon.com/cw/gregsediting)**, the Suzuki Liana's physics by **alekabul**, and the GT, prototype and classic racing tyre sidewalls by **sagatron918**, all used with permission.
 - **Circuits**: Chang International Circuit, Okayama International Circuit, Spielberg (Red Bull Ring), Automotodrom Grobnik, Oschersleben and Circuit de Monaco are by **Mitja Bonca**, Barbagallo and VIR by **dazzyb2k3**, Sachsenring, Norisring, Le Mans 1982, Goodwood and Borgloh by **gunnar333**, Watkins Glen, Bridgehampton and Riverside by **LilSki**, SpeedVegas by **Gogol**, Willow Springs by **Nukedrop**, and Istanbul Park by **Enver Bozkaya** (SRTR), all used with permission. Dunsfold Aerodrome is by **ACU**.
 - **RISE Motordrome**: the circuit, its buildings, stands and props are the project's own, built by `scripts/rwanda-official/` and licensed under [CC BY-NC-SA 4.0](public/tracks/rwanda_official/LICENSE.md): port it or build on it with credit, non-commercially, under the same licence. Its trees are the acacia by **evolveduk** and the shrub by **Natural_Disbuster (lemedesign)**, both CC BY 4.0.

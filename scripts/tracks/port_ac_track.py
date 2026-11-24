@@ -279,6 +279,64 @@ AC_TRACKS = {
             (2830, 'Anthony Noghès'),
         ],
     },
+    'monaco_asw_2022': {
+        'folder': 'monaco_gp22',
+        'layout_dir': '',
+        'models_ini': 'models.ini',
+        'modelledKerbs': True,
+        'modelledKerbCoverM': 0.4,
+        'visualRoadFitWindowM': 2.0,
+        'name': 'Circuit de Monaco',
+        'layout': '2022 Grand Prix layout',
+        'country': 'Monaco',
+        'city': 'Monte Carlo',
+        'type': 'street',
+        'baseAltitudeM': 15,
+        'pitboxes': 22,
+        'minWidthM': 7.2,
+        'wallMinGapM': 0.0,
+        'wallCapM': 32.0,
+        'openWalls': False,
+        'description': 'Circuit de Monaco Grand Prix layout in its 2022 Formula 1 presentation.',
+        'credit': {
+            'title': '2022 Monaco F1 Grand Prix',
+            'author': 'Pyyer (track), Blackcelica (skins), KevenK2 and TheRealCeeBee (extensions)',
+            'authorUrl': 'https://www.patreon.com/pyyer',
+            'url': 'https://www.patreon.com/pyyer',
+            'short': None,
+            'license': 'Non-commercial conversion and play permitted by AssettoCorsaOfficial; source URLs required',
+            'licenseUrl': 'https://www.patreon.com/pyyer',
+            'note': 'The archive README also credits Cozy61 for the included AI instructions; the bundled DYNAMIC_OBJECT is omitted because runtime placement is not supported in the static conversion.',
+        },
+    },
+    'shanghai_blckbox_2021': {
+        'folder': 'blckbox_shanghai',
+        'layout_dir': 'advanced',
+        'models_ini': 'models_advanced.ini',
+        'startLineOffsetM': 220.14,
+        # These props have external positions in models_advanced.ini, which the static converter does not bake in.
+        'excludeModels': [
+            'helicopter_01.kn5', 'helicopter_02.kn5', 'helicopter_03.kn5', 'helicopter_04.kn5',
+            'balloon_01.kn5', 'balloon_02.kn5', 'balloon_03.kn5',
+        ],
+        'name': 'Shanghai International Circuit',
+        'layout': 'Grand Prix layout (Advanced)',
+        'country': 'China',
+        'city': 'Shanghai',
+        'baseAltitudeM': 5,
+        'pitboxes': 60,
+        'description': 'Shanghai International Circuit Grand Prix layout, BLCKBOX version 1.5 (2021), Advanced variant.',
+        'credit': {
+            'title': 'BLCKBOX Shanghai International Circuit - Advanced (2021)',
+            'author': 'BLCKBOX, Bug3721',
+            'authorUrl': 'http://www.trmod.top/author/bug3721',
+            'url': 'http://www.trmod.top/426.html',
+            'short': None,
+            'license': 'Non-commercial conversion and play permitted by AssettoCorsaOfficial; source URLs required',
+            'licenseUrl': 'http://www.trmod.top/426.html',
+            'note': 'The archive credits BLCKBOX and Bug3721 and lists https://simracing.blckbox.net as its URL. The linked TRMOD entry is the earlier v1.2 base-track page.',
+        },
+    },
     'dunsfold': {
         'folder': 'topgear',
         'layout_dir': '',
@@ -1246,6 +1304,75 @@ AC_TRACKS = {
             'licenseUrl': 'https://www.overtake.gg/downloads/willow-springs-big-willow.32338/',
         },
     },
+    'yas_marina_2021': {
+        'folder': 'abu_dhabi_2021_chq',
+        'layout_dir': '',
+        'models_ini': 'models.ini',
+        'name': 'Yas Marina Circuit',
+        'layout': '2021 Grand Prix layout',
+        'country': 'United Arab Emirates',
+        'city': 'Abu Dhabi',
+        'baseAltitudeM': 10,
+        'pitboxes': 32,
+        'defaultTimeOfDay': 'night',
+        'description': 'Yas Marina Circuit in Abu Dhabi, UAE — the 5.281 km 2021 Grand Prix layout, available in day or night conditions.',
+        'credit': {
+            'title': 'Abu Dhabi 2021 CHQ v0.9',
+            'author': 'CHiQuiFReaKy',
+            'url': 'https://www.overtake.gg/downloads/categories/ac-tracks.8/',
+            'short': None,
+            'license': 'Permission unverified; private local conversion only',
+            'licenseUrl': None,
+        },
+    },
+    'sepang_chq_2026': {
+        'folder': 'chq_sepang',
+        'layout_dir': '',
+        'models_ini': 'models.ini',
+        'name': 'Sepang International Circuit',
+        'layout': 'Grand Prix layout',
+        'country': 'Malaysia',
+        'city': 'Sepang',
+        'baseAltitudeM': 20,
+        'pitboxes': 36,
+        'description': 'Sepang International Circuit in Sepang, Malaysia — the 5.543 km, 15-turn clockwise Grand Prix layout, using the CHQ 2026 update.',
+        'credit': {
+            'title': 'CHQ Sepang 2.0 - 2026',
+            'author': 'CHiQuiFReaKy',
+            'authorUrl': 'https://www.youtube.com/channel/UC4Wtx3ivRyBx6IUe7K72HUQ',
+            'url': 'https://www.patreon.com/CHiQuiFReaKy',
+            'short': 'https://mega.nz/file/ReZGyLab#kjpqtdDD-A5VDqRtYAMcmdszCveRXc3WLPVbr-0Z46M',
+            'license': 'Used with creator permission; credit required',
+            'licenseUrl': 'https://www.patreon.com/CHiQuiFReaKy',
+        },
+    },
+    'spa_fenryr_2025': {
+        'folder': 'fn_spa',
+        'layout_dir': 'gp',
+        'models_ini': 'models_gp.ini',
+        'name': 'Circuit de Spa-Francorchamps',
+        'layout': '2025 Grand Prix layout',
+        'country': 'Belgium',
+        'city': 'Stavelot',
+        'baseAltitudeM': 420,
+        'pitboxes': 42,
+        'description': 'Circuit de Spa-Francorchamps in Stavelot, Belgium — the 7.004 km Grand Prix layout updated for 2025.',
+        # Fenryr's valid main asphalt is named 01ASPH (not ASPHALT), while ASPHB is non-valid run-off.
+        'physicsNodeOverrides': [
+            (r'^01ASPH(?:\.|$)', 'road'),
+            (r'^01(?:ASPHB|OUT)(?:\.|$)', 'runoff'),
+        ],
+        'physicsOverridesFirst': True,
+        'credit': {
+            'title': 'Spa-Francorchamps 2025',
+            'author': '@fenryr',
+            'authorUrl': 'https://www.assetto-fr.com/asphalt/belgium/',
+            'url': 'https://www.assetto-fr.com/asphalt/belgium/',
+            'short': None,
+            'license': 'Non-commercial use with creator permission; credit @fenryr',
+            'licenseUrl': 'https://www.assetto-fr.com/asphalt/belgium/',
+        },
+    },
 }
 
 
@@ -1389,13 +1516,16 @@ def get_kn5_list(cfg):
         return cfg['kn5_files']
     ini_path = os.path.join(base, cfg['models_ini'])
     cp = parse_ac_ini(ini_path)
+    excluded = {os.path.normcase(name) for name in cfg.get('excludeModels', [])}
     out = []
+    # Runtime DYNAMIC_OBJECTs use random placement that a static GLB cannot represent; including them puts them at the origin.
     for sec in cp.sections():
-        if sec.startswith('MODEL_') or sec.startswith('DYNAMIC_OBJECT_'):
-            f = cp[sec].get('FILE', '').strip()
-            if f and f.lower().endswith('.kn5') and os.path.exists(os.path.join(base, f)):
-                if f not in out:
-                    out.append(f)
+        if not sec.startswith('MODEL_'):
+            continue
+        f = cp[sec].get('FILE', '').strip()
+        if f and f.lower().endswith('.kn5') and os.path.normcase(f) not in excluded and os.path.exists(os.path.join(base, f)):
+            if f not in out:
+                out.append(f)
     return out
 
 
@@ -2595,6 +2725,7 @@ def index_entry(tid, cfg, data):
         'credit': cfg['credit'],
         **({'type': cfg['type']} if cfg.get('type') else {}),
         'quality': 'sim',
+        **({'defaultTimeOfDay': cfg['defaultTimeOfDay']} if cfg.get('defaultTimeOfDay') else {}),
         # `unlisted`: left out of the game's lists, opened by its link only (src/lib/track-registry.ts)
         **({'unlisted': True} if cfg.get('unlisted') else {}),
     }
@@ -2614,8 +2745,9 @@ def sync_track_configs(built_tracks):
             'baseAltitudeM': cfg['baseAltitudeM'],
             'credit': cfg['credit'],
             **({'type': cfg['type']} if cfg.get('type') else {}),
+            **({'defaultTimeOfDay': cfg['defaultTimeOfDay']} if cfg.get('defaultTimeOfDay') else {}),
         }
-    with open(tjson_path, 'w', encoding='utf-8') as f:
+    with open(tjson_path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(cfgs, f, indent=2, ensure_ascii=False)
         f.write('\n')
 
@@ -2626,7 +2758,7 @@ def sync_track_configs(built_tracks):
     order = list(cfgs.keys())
     # Circuits this script does not know (RISE Motordrome, built by scripts/rwanda-official) keep their place on top
     idx.sort(key=lambda e: order.index(e['id']) if e['id'] in order else -1)
-    with open(idx_path, 'w', encoding='utf-8') as f:
+    with open(idx_path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(idx, f, indent=2, ensure_ascii=False)
         f.write('\n')
 
@@ -2976,7 +3108,8 @@ def apply_physics_patch(extra, path, skip=()):
     log(f'  physics patch {os.path.basename(path)}: ' + ', '.join(moved) + (f' (left out: {", ".join(skip)})' if skip else ''))
 
 
-def build_modelled_kerb_mesh(phys_kerb_tris, phys_road_tris, xz, tan2, rgt2, width, ds, off, extra, visual_items):
+def build_modelled_kerb_mesh(phys_kerb_tris, phys_road_tris, xz, tan2, rgt2, width, ds, off, extra, visual_items,
+                             cover_m=MODELLED_KERB_COVER_M):
     """`modelledKerbs`: the mod's own kerbs, as modelled, moved with the road under them.
 
     The converted road is rebuilt from the mod's (smoothed, crests limited), so it lies a few centimetres above or
@@ -3075,7 +3208,7 @@ def build_modelled_kerb_mesh(phys_kerb_tris, phys_road_tris, xz, tan2, rgt2, wid
         """P (n x 3, the mod's coordinates, already shifted): each point under a converted surface lifted onto it"""
         for k in range(len(P)):
             x, y, z = P[k]
-            hs = [h for h, _, _ in soup_c.hits(x, z) if y - 0.05 < h <= y + MODELLED_KERB_COVER_M]
+            hs = [h for h, _, _ in soup_c.hits(x, z) if y - 0.05 < h <= y + cover_m]
             if hs and max(hs) + MODELLED_KERB_CLEAR_M > y:
                 P[k, 1] = max(hs) + MODELLED_KERB_CLEAR_M
                 n_lifted[0] += 1
@@ -3275,7 +3408,7 @@ def build_ac_track(tid, cfg, args):
     road_mat_names = set()
     # `notRoadMaterials`: a mod's own materials kept off the asphalt shader, e.g. terrain drawn over ROAD physics meshes
     non_road_mat_re = re.compile(
-        r'grass|gravel|sand|wall|fence|kerb|curb|rmbl|rumble|line|stripe|skid|groove|sign|glass|water'
+        r'grass|gravel|sand|off.?road|wall|fence|kerb|curb|rmbl|rumble|line|stripe|skid|groove|sign|glass|water'
         + (f"|{cfg['notRoadMaterials']}" if cfg.get('notRoadMaterials') else ''),
         re.I,
     )
@@ -3819,6 +3952,8 @@ def build_from_sources(tid, cfg, args, src):
     data['metadata']['author'] = f"{cfg['credit']['author']} ({cfg['credit']['license']})"
     data['metadata']['credit'] = cfg['credit']
     data['metadata']['mesh']['roadMaterials'] = sorted(road_mat_names)
+    if 'visualRoadFitWindowM' in cfg:
+        data['metadata']['mesh']['visualRoadFitWindowM'] = cfg['visualRoadFitWindowM']
     # The sim fits these surfaces to the road at load and caps the block-modelled kerbs (TrackColliderQuery.ts)
     data['metadata']['mesh']['conformSurfaces'] = True
     if p2p:
@@ -3934,6 +4069,9 @@ def build_from_sources(tid, cfg, args, src):
     else:
         data['pitLane'] = build_pit_lane(layout_path, xz, off, L, ds)
 
+    if cfg.get('startLineOffsetM'):
+        rebase_track_data_start(data, cfg['startLineOffsetM'])
+
     out_dir = os.path.join(ROOT, 'public', 'tracks', tid)
     os.makedirs(out_dir, exist_ok=True)
     json_out = os.path.join(out_dir, 'track_data.json')
@@ -3976,8 +4114,10 @@ def build_from_sources(tid, cfg, args, src):
             apply_physics_patch(extra, os.path.join(ROOT, rel),
                                 skip=('Track_Surface_Kerb',) if modelled_kerbs else ())
         if modelled_kerbs:
-            if not build_modelled_kerb_mesh(phys_tris['kerb'], phys_tris['road'], xz, tan2, rgt2, width, ds, off, extra,
-                                            src.get('visual_items', ())):
+            if not build_modelled_kerb_mesh(
+                phys_tris['kerb'], phys_tris['road'], xz, tan2, rgt2, width, ds, off, extra,
+                src.get('visual_items', ()), cfg.get('modelledKerbCoverM', MODELLED_KERB_COVER_M),
+            ):
                 # No modelled kerb mesh after all: the kerb entry goes back to the one without the modelled kerbs'
                 # settings, in the written file as it is now (apply_street_hairpin_margin may have rewritten it)
                 data['metadata']['surfaceTable']['kerb'] = kerb_surface
@@ -4035,6 +4175,133 @@ def p2p_track_data(data, cfg, n, ds, L, finS, endS, stS, splitS, dead, pos3):
         f'{pos3[i_fin, 1] - pos3[0, 1]:+.0f} m start to finish')
 
 
+def rebase_track_data_start(data, requested_s):
+    """Rebase a closed circuit's lap data to a physical start line whose distance on the source lap is `requested_s`."""
+    samples = data['samples']
+    count = len(samples)
+    length = float(data['metadata']['lengthMeters'])
+    ds = length / count
+    index = int(round((float(requested_s) % length) / ds)) % count
+    offset = float(samples[index]['s'])
+    if offset <= 1e-6:
+        return
+
+    def shifted_s(s):
+        return (float(s) - offset) % length
+
+    def sample_at(s):
+        x = (float(s) % length) / ds
+        i0 = int(math.floor(x)) % count
+        i1 = (i0 + 1) % count
+        a = x - math.floor(x)
+        p0, p1 = np.asarray(samples[i0]['p'], float), np.asarray(samples[i1]['p'], float)
+        t0, t1 = np.asarray(samples[i0]['t'], float), np.asarray(samples[i1]['t'], float)
+        p = p0 * (1 - a) + p1 * a
+        t = t0 * (1 - a) + t1 * a
+        t /= max(float(np.linalg.norm(t)), 1e-9)
+        width = float(samples[i0]['w'] * (1 - a) + samples[i1]['w'] * a)
+        bank = float(samples[i0]['b'] * (1 - a) + samples[i1]['b'] * a)
+        return p, t, width, bank
+
+    def gate_at(old_s, new_s):
+        p, tangent, width, bank = sample_at(old_s)
+        right = np.array([-tangent[2], 0.0, tangent[0]])
+        right /= max(float(np.linalg.norm(right)), 1e-9)
+        half = width * 0.5
+        left = p - right * half
+        right_edge = p + right * half
+        left[1] = p[1] + math.sin(bank) * half
+        right_edge[1] = p[1] - math.sin(bank) * half
+        return {
+            's': round(new_s, 2),
+            'left': [round(float(v), 3) for v in left],
+            'right': [round(float(v), 3) for v in right_edge],
+            'normal': [round(float(v), 5) for v in tangent],
+        }
+
+    old_sectors = data['sectors']
+    ends = sorted((shifted_s(sector['endS']), float(sector['endS'])) for sector in old_sectors[:-1])
+    if not ends or any(not 0 < new_s < length for new_s, _ in ends):
+        raise ValueError(f"{data['metadata']['id']}: startLineOffsetM leaves no valid sector boundaries")
+    data['samples'] = samples[index:] + samples[:index]
+    for i, sample in enumerate(data['samples']):
+        sample['s'] = round(shifted_s(sample['s']), 3)
+
+    starts = [(0.0, offset)] + ends
+    end_values = [new_s for new_s, _ in ends] + [length]
+    data['sectors'] = [
+        {
+            'id': i + 1,
+            'startS': round(starts[i][0], 2),
+            'endS': round(end_values[i], 2),
+            'gate': gate_at(starts[i][1], starts[i][0]),
+        }
+        for i in range(len(old_sectors))
+    ]
+    for sample in data['samples']:
+        sample['sec'] = next((sector['id'] for sector in data['sectors'] if sample['s'] < sector['endS']), len(data['sectors']))
+
+    for turn in data['turns']:
+        turn['sApprox'] = round(shifted_s(turn['sApprox']), 1)
+        turn['sector'] = next((sector['id'] for sector in data['sectors'] if turn['sApprox'] < sector['endS']), len(data['sectors']))
+    data['turns'].sort(key=lambda turn: turn['sApprox'])
+
+    for zone in data.get('drsZones', []):
+        for key in ('detection', 'start', 'end'):
+            if key in zone:
+                zone[key] = round(shifted_s(float(zone[key]) * length) / length, 6)
+    for camera in data.get('cameras', []):
+        for key in ('inPoint', 'outPoint'):
+            if key in camera:
+                camera[key] = round(shifted_s(float(camera[key]) * length) / length, 6)
+    if data.get('pitLane'):
+        for key in ('entryS', 'exitS'):
+            if key in data['pitLane']:
+                data['pitLane'][key] = round(shifted_s(data['pitLane'][key]), 2)
+
+    boundaries = data.get('boundaries', {})
+    spacing = float(boundaries.get('spacingM', 0))
+    boundary_index = int(round(offset / spacing)) if spacing > 0 else 0
+    for key in ('left', 'right', 'wallLeft', 'wallRight'):
+        points = boundaries.get(key)
+        if points and boundary_index:
+            boundary_index %= len(points)
+            boundaries[key] = points[boundary_index:] + points[:boundary_index]
+
+    checkpoint_count = len(data.get('checkpoints', []))
+    data['checkpoints'] = [
+        {'id': i, **gate_at((offset + length * i / checkpoint_count) % length, length * i / checkpoint_count)}
+        for i in range(checkpoint_count)
+    ] if checkpoint_count else []
+
+    for slot in data.get('spawnGrid', []):
+        slot_number = int(slot['slot'])
+        s = (length - 11.6 - 8.0 * (slot_number - 1)) % length
+        p, tangent, width, bank = sample_at((offset + s) % length)
+        lateral_magnitude = round(min(3.4, max(1.8, width * 0.24)), 2)
+        lateral = lateral_magnitude if slot_number % 2 else -lateral_magnitude
+        right = np.array([-tangent[2], 0.0, tangent[0]])
+        right /= max(float(np.linalg.norm(right)), 1e-9)
+        position = p + right * lateral
+        position[1] = p[1] - math.sin(bank) * lateral + 0.11
+        slot.update({
+            's': round(s, 2),
+            'lateral': lateral,
+            'position': [round(float(v), 3) for v in position],
+            'yawRad': round(math.atan2(tangent[0], tangent[2]), 4),
+            'forward': [round(float(v), 5) for v in tangent],
+        })
+
+    for profile in (data['metadata'].get('racingLine'), data['metadata'].get('racingLineGt3')):
+        zones = profile.get('brakingZones', []) if profile else []
+        for zone in zones:
+            for key in ('startS', 'endS'):
+                if key in zone:
+                    zone[key] = round(shifted_s(zone[key]), 1)
+        zones.sort(key=lambda zone: zone.get('startS', 0))
+    data['metadata']['startLineOffsetM'] = round(offset, 3)
+
+
 def carry_previous_lines(json_out, data):
     """A build that skips the racing-line optimiser keeps the previous build's lines: its F1 and GT3 offsets and
     speeds (`ro`, `roGt3`, `r`, `v`, `bL`, `t`) and lap time, copied into `data` when the centreline has as many
@@ -4052,7 +4319,13 @@ def carry_previous_lines(json_out, data):
         log(f'  racing lines: the centreline has {len(data["samples"])} samples, the previous build {len(old_samples)}: '
             'the minimum-curvature line')
         return False
-    for p_new, p_old in zip(data['samples'], old_samples):
+    length = float(data['metadata']['lengthMeters'])
+    ds = length / len(data['samples'])
+    old_offset = float(old_data.get('metadata', {}).get('startLineOffsetM', 0))
+    new_offset = float(data['metadata'].get('startLineOffsetM', 0))
+    shift = int(round((new_offset - old_offset) / ds))
+    for i, p_new in enumerate(data['samples']):
+        p_old = old_samples[(i + shift) % len(old_samples)]
         for k_opt in ('ro', 'roGt3', 'r', 'v', 'bL', 't'):
             if k_opt in p_old:
                 p_new[k_opt] = p_old[k_opt]

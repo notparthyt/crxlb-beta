@@ -157,7 +157,11 @@ export interface LibreCorsaSimulatorProps {
   onRestart?: () => void;
 }
 
-export const LibreCorsaSimulator: React.FC<LibreCorsaSimulatorProps> = ({ trackId = DEFAULT_TRACK_ID, onSelectTrack, onRestart }) => {
+export const LibreCorsaSimulator: React.FC<LibreCorsaSimulatorProps> = ({
+  trackId = DEFAULT_TRACK_ID,
+  onSelectTrack,
+  onRestart,
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const nameplatesRef = useRef<OverheadNameplatesSink | null>(null);
   /** The drive on the mounted circuit: the scene, the car and the frame loop (created once the container exists) */
@@ -169,7 +173,7 @@ export const LibreCorsaSimulator: React.FC<LibreCorsaSimulatorProps> = ({ trackI
 
   const track = useMemo(() => getActiveTrackData(1200), []);
   /** The chosen car, and the vehicle model it drives on */
-  const [carId, setCarId] = useState<CarId>(loadCarChoice);
+  const [carId, setCarId] = useState<CarId>(() => loadCarChoice());
   const carIdRef = useRef(carId);
   const [vehicleModel, setVehicleModel] = useState<VehicleModelId>(() => carPhysics(carId));
   const vehicleModelRef = useRef(vehicleModel);

@@ -27,7 +27,7 @@ export interface RaceSetupPanelProps {
   onOpenCircuit: () => void;
   onOpenConditions?: () => void;
   /** Opens the car browser (named for the Event row it once sat behind) */
-  onOpenGarage: () => void;
+  onOpenGarage?: () => void;
   onStart: () => void;
 }
 
