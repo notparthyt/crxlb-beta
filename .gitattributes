@@ -4,3 +4,4 @@ public/tracks/sepang_chq_2026/sepang_chq_2026.glb filter=lfs diff=lfs merge=lfs 
 public/tracks/shanghai_blckbox_2021/shanghai_blckbox_2021.glb filter=lfs diff=lfs merge=lfs -text
 public/tracks/spa_fenryr_2025/spa_fenryr_2025.glb filter=lfs diff=lfs merge=lfs -text
 public/tracks/yas_marina_2021/yas_marina_2021.glb filter=lfs diff=lfs merge=lfs -text
+public/cars/hyper-rb22/model/redbull22.glb filter=lfs diff=lfs merge=lfs -text
