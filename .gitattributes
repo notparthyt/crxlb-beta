@@ -1,0 +1,6 @@
+public/tracks/interlagos_f1_2023/interlagos_f1_2023.glb filter=lfs diff=lfs merge=lfs -text
+public/tracks/monaco_asw_2022/monaco_asw_2022.glb filter=lfs diff=lfs merge=lfs -text
+public/tracks/sepang_chq_2026/sepang_chq_2026.glb filter=lfs diff=lfs merge=lfs -text
+public/tracks/shanghai_blckbox_2021/shanghai_blckbox_2021.glb filter=lfs diff=lfs merge=lfs -text
+public/tracks/spa_fenryr_2025/spa_fenryr_2025.glb filter=lfs diff=lfs merge=lfs -text
+public/tracks/yas_marina_2021/yas_marina_2021.glb filter=lfs diff=lfs merge=lfs -text
